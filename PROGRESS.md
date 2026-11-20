@@ -87,9 +87,9 @@ Done when mail goes to and from an outside server in CI, an IMAP app works, and 
 | 3.8 JMAP (Core and Mail: session, Mailbox, Email, Thread, EmailSubmission, push) | Done | ortus-mail 115caf2; ortus-core fdcf607 | Access::Header in core; result references, upload/download, import, push over SSE; both shapes |
 | 3.9 Web inbox and reading (threads, folders, search in mail) | Done | ortus-mail 8732228 | Board Main at 1440×900 (folders, labels, Important/Other/Feeds, catch-up, threads, attachments, quick reply, live via SSE); six languages, RTL |
 | 3.10 Compose (WebCompose): recipients with suggestions, attachments, drafts, send later, undo send, policy warnings with a reason; Snoozed and Scheduled folders of the Main board | Done | ortus-mail 8cc5507 | Board WebCompose; policy asked without recording, again when sending; undo = 10 s scheduled send; snooze job; six languages |
-| 3.11 Deliverability (AdminDeliverability): sent, delivered, bounced, queue; DMARC aggregate reports received and read; S2.9 | Next | | |
-| 3.12 Mailbox import from an old server over IMAP (Admin › Migrations), failures listed and retried; the web half of S2.4 | | | |
-| 3.13 CI: an outside mail server (container) exchanging mail both ways, with test DNS | | | |
+| 3.11 Deliverability (AdminDeliverability): sent, delivered, bounced, queue; DMARC aggregate reports received and read; S2.9 | Done | ortus-mail 9deafcd; ortus fd2d9b9 (S2.9) | Reports by mail at dmarc-reports@ (gzip/zip/XML, size-capped); by provider and day; who sends as our domains; S2.9 in both shapes |
+| 3.12 Mailbox import from an old server over IMAP (Admin › Migrations), failures listed and retried; the web half of S2.4 | Done | ortus-mail f2c71fb; ortus-core 48bc3d8 | Resumable per-account jobs over TLS; retry with a new password or by the owner (reconnect page, note in their inbox); key rotation now re-seals app secrets |
+| 3.13 CI: an outside mail server (container) exchanging mail both ways, with test DNS | Next | | |
 | 3.14 Slice review by a separate reviewer | | | |
 
 ## Slices 4 to 13
