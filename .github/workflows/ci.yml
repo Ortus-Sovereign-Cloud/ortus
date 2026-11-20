@@ -14,10 +14,42 @@ concurrency:
 
 jobs:
   check:
+    strategy:
+      fail-fast: false
+      matrix:
+        # The two shapes Ortus ships in; every story runs in both.
+        shape: [one-machine, cluster]
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: ortus
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      rustfs:
+        image: rustfs/rustfs:1.0.6
+        env:
+          RUSTFS_ACCESS_KEY: ortusaccess
+          RUSTFS_SECRET_KEY: ortussecret
+        ports:
+          - 9000:9000
     env:
       # This runner is thrown away afterwards: install Ortus on it for real.
       ORTUS_INSTALL_TEST_SYSTEM: "1"
+      ORTUS_STORY_SHAPES: ${{ matrix.shape }}
+      ORTUS_TEST_POSTGRES: postgres://postgres:ortus@127.0.0.1:5432/postgres
+      ORTUS_REQUIRE_POSTGRES: "1"
+      ORTUS_TEST_S3_ENDPOINT: http://127.0.0.1:9000
+      ORTUS_TEST_S3_BUCKET: ortus-test
+      ORTUS_TEST_S3_ACCESS_KEY: ortusaccess
+      ORTUS_TEST_S3_SECRET_KEY: ortussecret
+      ORTUS_REQUIRE_S3: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -30,5 +62,22 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-deny
-      - run: sudo apt-get install -y shellcheck
+      - name: Tools, the test bucket and the browser
+        env:
+          AWS_ACCESS_KEY_ID: ortusaccess
+          AWS_SECRET_ACCESS_KEY: ortussecret
+          AWS_DEFAULT_REGION: us-east-1
+        run: |
+          sudo apt-get install -y shellcheck
+          for attempt in $(seq 30); do
+            aws --endpoint-url "$ORTUS_TEST_S3_ENDPOINT" s3 mb "s3://$ORTUS_TEST_S3_BUCKET" && break
+            sleep 2
+          done
+          cd stories && npm ci && npx playwright install --with-deps chromium
       - run: ci/check.sh
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: story-results-${{ matrix.shape }}
+          path: stories/test-results
+          retention-days: 7

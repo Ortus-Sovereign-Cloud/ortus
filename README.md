@@ -29,6 +29,19 @@ This creates the system user `ortus`, keeps all data in `/var/lib/ortus` (SQLite
 - **Backups:** `ortus-backup.timer` writes one every night to `/var/lib/ortus/backups` and keeps seven. Copy them off the machine. By hand: `sudo -u ortus ORTUS_CONFIG=/etc/ortus/ortus.toml ortus backup <new directory>`.
 - **Restore:** stop Ortus, move `/var/lib/ortus` aside, create it again empty (owned by `ortus`, mode 0750), then `sudo -u ortus ORTUS_CONFIG=/etc/ortus/ortus.toml ortus restore <backup>` and start Ortus. `ortus check-backup <backup>` checks a backup without restoring it. A backup restores into either shape: one machine or the Kubernetes chart.
 
+## Story tests
+
+`stories/` holds the user stories of the design as browser tests against the release program. `steps.json` lists every step (`stories/tools/import-steps.py` copies them from the design); a spec proves a step with `step("S2.1", async ({ page, ortus }) => ...)` inside `story(...)`, and each story runs its steps in order on one fresh installation.
+
+```sh
+cd stories && npm ci
+ORTUS_STORY_SHAPE=one-machine npx playwright test   # SQLite and a directory
+ORTUS_STORY_SHAPE=cluster npx playwright test       # PostgreSQL and S3 (ORTUS_TEST_POSTGRES, ORTUS_TEST_S3_*)
+node tools/coverage.mjs                             # which V1 steps pass; --strict fails unless all do
+```
+
+CI runs everything in both shapes.
+
 ## Licence
 
 Licensed under either of the Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE)) or the MIT license ([LICENSE-MIT](LICENSE-MIT)), at your option.
