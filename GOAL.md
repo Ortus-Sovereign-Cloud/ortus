@@ -28,6 +28,9 @@ Read this file, `PROGRESS.md`, `DECISIONS.md` and `OWNER-NEEDED.md` at the start
 - **Signing in V1:** with certificates the organisation issues. Qualified eID signatures come after V1.
 - **Phones:** native Swift and Kotlin on the public API. iOS builds and tests on GitHub's macOS runners. End-to-end rooms use hand-written bindings to vodozemac.
 - **Security review:** our own, per slice (below). No outside review is planned.
+- **Front page and sign-in:** an installation's root address shows the project website to visitors and the app once signed in, on the same host. The project website (what Ortus is, install guide, links) is a setting that only the public demo at ortus.cc turns on; an organisation's own installation opens on its sign-in page. The website is in the same six languages as the app.
+- **After signing in:** the first time, the All apps chooser; after that, straight into the app used last, with the chooser one click away on the rail.
+- **Public demo:** open sign-up for anyone, with an email check, small quotas (about 100 MB per account, no mail to outside addresses, a cap on new accounts per day and per address), accounts and their data deleted after 30 days, and a short terms and privacy page (no real or sensitive data, no guarantee, data may be wiped).
 - **Ortus OS** and all V2 and Later boards start after V1.
 
 ## The plan
@@ -37,7 +40,7 @@ Work in this order. Each slice ends when its screens work on a fresh install in 
 | Slice | What | Done when |
 | --- | --- | --- |
 | 0 | Foundation. Left: 0.9 one-machine install (release build, data directory, service unit, backup and restore commands), 0.10 chart (one workload per role, CloudNativePG or external PostgreSQL, RustFS or external S3), 0.11 CI matrix and story-test harness with named steps, 0.12 app interface in the core (an app registers routes, listeners, tables, jobs and its switcher entry; a switch per app), 0.13 cross-app interfaces with a "not installed" answer, 0.14 the `ortus` repository builds the four programs from pinned app versions | An empty Ortus installs, upgrades and backs up in both shapes |
-| 1 | Sign-in and admin base: accounts and roles, first-start token, passkeys, password with one-time code and a recovery kit, sessions, OpenID Connect provider, broker to outside providers (OIDC, then SAML), audit events, admin screens (first run, users, sign-in policy), welcome and personal settings | Story steps S2.1 and S2.3 pass; a new user signs in with a passkey. **Gate A** |
+| 1 | Sign-in and admin base: the project website and the sign-in page at the root, open sign-up with an email check (for the demo), accounts and roles, first-start token, passkeys, password with one-time code and a recovery kit, sessions, OpenID Connect provider, broker to outside providers (OIDC, then SAML), audit events, admin screens (first run, users, sign-in policy), welcome and personal settings | Story steps S2.1 and S2.3 pass; a new user signs in with a passkey. **Gate A** |
 | 2 | Policy and audit: labels and one policy function, hash-chained audit log, retention and legal hold, Sovereignty screen | A label blocks a forbidden share and the attempt is in the audit log |
 | 3 | Mail: store, receiving with sender checks, sending with queue and signing, IMAP, JMAP, basic spam filter, Inbox and Compose, Domains and Deliverability, mailbox import | Mail to and from an outside server in CI; an IMAP app works; S2.2, S2.4 and S2.9 pass |
 | 4 | Calendar and contacts: CalDAV, CardDAV, invitations by mail, free and busy | An outside invitation round trip; a CalDAV app works |

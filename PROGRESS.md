@@ -22,6 +22,14 @@ Newest work at the bottom of each slice. Status is Done, In progress, Next or Ow
 | 0.13 Cross-app interfaces | | | |
 | 0.14 Four programs from pinned versions | | | |
 
-## Slices 1 to 13
+## Slice 1: Sign-in and admin base
+
+Not started; break it into tasks when it begins. It must include, besides the plan in `GOAL.md`:
+
+- The project website at the root (a setting that only the public demo turns on), in six languages, with a Sign in link.
+- The sign-in and sign-up pages, open sign-up with an email check, the demo limits from `GOAL.md` (quotas, account cap, 30-day expiry) and the terms and privacy page.
+- After sign-in: the app chooser the first time, then the last app used.
+
+## Slices 2 to 13
 
 Not started. Break each into tasks when it begins.
