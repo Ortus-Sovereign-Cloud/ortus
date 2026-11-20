@@ -112,6 +112,8 @@ Done when an invitation makes a round trip with an outside server and a CalDAV a
 
 ## Slice 5: Drive and search (Gate B)
 
+Gate B passed 2026-11-20: a file is shared by label rules and search finds mail and files (release program, both shapes, ortus stories/specs/drive.spec.ts).
+
 Done when a file is shared by label rules and search finds mail and files.
 
 | Task | State | Commits | Notes |
@@ -126,10 +128,27 @@ Done when a file is shared by label rules and search finds mail and files.
 | 5.7 Mail, calendar, contacts and drive feed the index; files from mail ("From email") saved to Drive | Done | ortus-mail 6bf41df, 551f33a; ortus-calendar a91f145; ortus-drive b0d813b, 03d5b34; ortus-core 4e44e30, 44d9b38 | Mail on delivery (job for older mail; removal inside the delete job's transaction), events and contacts on put/delete, drive files with their text and shared items for their viewers; Save to Drive on attachments via interfaces::Drive (source, note "Attached by …", a free name, never a new version of another file) |
 | 5.8 Web drive (WebDrive): folders, list, suggested, upload panel, quota; six languages | Done | ortus-drive dc82012 | Sections, breadcrumbs, list and grid, suggested, file card with text preview and who has access, uploads in parts with progress and drag and drop, trash and restore, quota; six languages; browser tests at 1440×900 |
 | 5.9 File preview and share dialog (WebFilePreview); six languages | Done | ortus-drive dc82012; ortus-mail 060e591 | Opened file with versions, send by email (Compose takes ?subject=&text=), download, share dialog (people and groups with roles, outside people, labels for owners, link with expiry, password, no download, opened count) |
-| 5.10 Search and commands (WebSearch, Ctrl K in the shell): mail, files, events, people; filters; six languages | | | |
-| 5.11 CI: a share blocked by a label and allowed by another, search across apps, both shapes | | | |
-| 5.12 Slice review by a separate reviewer | | | |
+| 5.10 Search and commands (WebSearch, Ctrl K in the shell): mail, files, events, people; filters; six languages | Done | ortus-core b6aeeb9, 4b48623 | Overlay in the shell (Ctrl K unless the app uses it), grouped results with marked words, chips for apps, from: and has:attachment, commands (book a meeting, write about), keyboard; results in another app open as a page |
+| 5.11 CI: a share blocked by a label and allowed by another, search across apps, both shapes | Done | ortus stories/specs/drive.spec.ts | Release program, both shapes: INTERNAL refuses a link, PUBLIC allows it, a visitor opens it with its password; Ctrl K finds a message, a file and an event, and the file opens |
+| 5.12 Slice review by a separate reviewer | Done | ortus-drive fffcd91; ortus-calendar c2b0e8c; ortus-mail 2bfedda | 4 high, 5 medium, lows: labels escaped through folder links, moves, restores, copies and deep nesting (strictest label up the tree now decides, links judged per file served); download stream could stall the I/O runtime; unbounded unpacking in document text; upload parts beyond the declared size and pending bytes off the quota; quota race; link addresses visible to viewers; forgotten accounts' files and caches; range edge cases; calendar removal and mail backlog in search. Regression tests in ortus-drive tests/review.rs. Not changed: "no download" is a viewing preference (viewers can still save what they see; watermark is shown over the view), noted in DECISIONS; search ranks by date across sharers (fine at V1 sizes) |
 
-## Slices 6 to 13
+## Slice 6: Docs
+
+Done when two people edit one document; S1.7 and S1.8 pass.
+
+| Task | State | Commits | Notes |
+| --- | --- | --- | --- |
+| 6.0 Document store: documents as Yjs updates and snapshots (both shapes), names, folders through Drive, labels, versions (named snapshots), access through Drive's shares | | | |
+| 6.1 Sync server: the Yjs sync and awareness protocol over WebSocket (or SSE plus POST where WebSocket is not there), authorised per document, updates merged and compacted (yrs) | | | |
+| 6.2 Editor (WebDocEditor): rich text with headings, lists, tables; presence (who is here, their cursors); six languages | | | |
+| 6.3 Comments: on a range, threads, replies, mentions (assigned to), resolve | | | |
+| 6.4 Suggestions: suggesting mode, insertions and deletions shown, accept and reject one by one | | | |
+| 6.5 Review route (WebReview): send for approval through steps (people in order, due time), approve or send back with a comment, "changed since" the version a reviewer last saw | | | |
+| 6.6 Word and PDF: export DOCX and PDF, import DOCX | | | |
+| 6.7 Docs in Drive and search: documents listed in Drive, opened from it, indexed by their text | | | |
+| 6.8 CI: S1.7 (two people edit, a suggestion accepted) and S1.8 (sent for approval, reviewed) in the browser, both shapes | | | |
+| 6.9 Slice review by a separate reviewer | | | |
+
+## Slices 7 to 13
 
 Not started. Break each into tasks when it begins.
