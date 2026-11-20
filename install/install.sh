@@ -8,8 +8,8 @@
 # - puts the program at /usr/local/bin/ortus, keeping the one it replaces as
 #   /usr/local/bin/ortus.previous
 # - installs and starts ortus.service and the daily ortus-backup.timer
-# - before an upgrade, takes a backup with the running program into
-#   /var/lib/ortus/backups/before-upgrade-<time>
+# - before an upgrade, takes a backup with the running program (the backup
+#   service) into /var/lib/ortus/backups, before changing anything
 # - waits for the health check; when an upgrade does not come up, puts the
 #   previous program back and starts that again
 #
@@ -71,10 +71,18 @@ if [ -e "$bin/ortus" ]; then
   if cmp -s "$binary" "$bin/ortus"; then
     echo "install: $bin/ortus is already this program"
   else
-    cp -p "$bin/ortus" "$bin/ortus.previous"
     upgrade=yes
   fi
 fi
+# Before anything changes: a backup taken by the program that is running,
+# through the backup service, which reads the settings as the program does.
+before=""
+if [ -z "$root" ] && [ "$upgrade" = yes ] && systemctl is-active --quiet ortus; then
+  systemctl start ortus-backup.service || fail "the backup before the upgrade failed; nothing was changed (see journalctl -u ortus-backup)"
+  before="$(find /var/lib/ortus/backups -mindepth 1 -maxdepth 1 -type d -name '2*Z' | sort | tail -n 1)"
+  echo "install: backup before the upgrade: $before"
+fi
+[ "$upgrade" = yes ] && cp -p "$bin/ortus" "$bin/ortus.previous"
 install -m 0755 "$binary" "$bin/ortus.new"
 mv -f "$bin/ortus.new" "$bin/ortus"
 for unit in ortus.service ortus-backup.service ortus-backup.timer; do
@@ -106,15 +114,7 @@ healthy() {
 systemctl daemon-reload
 systemctl enable --quiet ortus.service ortus-backup.timer
 systemctl start ortus-backup.timer
-as_ortus() {
-  (cd / && runuser -u ortus -- env ORTUS_CONFIG=/etc/ortus/ortus.toml sh -c 'set -a; . /etc/ortus/ortus.env; set +a; exec "$@"' sh "$@")
-}
-
 if [ "$upgrade" = yes ]; then
-  if systemctl is-active --quiet ortus; then
-    before="/var/lib/ortus/backups/before-upgrade-$(date -u +%Y%m%dT%H%M%SZ)"
-    as_ortus "$bin/ortus.previous" backup "$before" || fail "the backup before the upgrade failed; nothing was changed but the program file (the previous one is $bin/ortus.previous)"
-  fi
   systemctl restart ortus.service || true
 else
   systemctl start ortus.service || true
@@ -133,6 +133,6 @@ if [ "$upgrade" = yes ]; then
   if healthy; then
     fail "the upgrade failed; the previous program is running again"
   fi
-  [ -z "${before:-}" ] || fail "the previous program does not start either (the upgrade may have changed the database); restore $before into an empty data directory"
+  [ -z "$before" ] || fail "the previous program does not start either (the upgrade may have changed the database); restore $before into an empty data directory"
 fi
 fail "Ortus is not running; see journalctl -u ortus"

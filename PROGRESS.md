@@ -16,19 +16,39 @@ Newest work at the bottom of each slice. Status is Done, In progress, Next or Ow
 | 0.7 Public API skeleton | Done | ortus-core 363321d, 7227206 | `api/openapi.json` is generated; a test fails when stale |
 | 0.8 Web shell, six languages, right to left | Done | ortus-core 3ec3985 | 18 browser tests; design match checked by eye only; translations need native readers; PostgreSQL has no TLS yet |
 | 0.9 One-machine install | Done | ortus-core ffa2d1f, ortus 865b259 | `ortus serve/backup/check-backup/restore/version`; engine-independent backups (SQLite+dir ↔ PostgreSQL+S3); hardened systemd unit, daily backup timer, upgrade with backup and rollback; CI installs for real. One local test run used sudo here by mistake before the real install was gated to CI; it removed everything it made |
-| 0.10 Chart | In progress | ortus-deploy (not pushed yet) | Chart written; k3d test found and fixed two real bugs (service-link env vars clobbering ORTUS_WEB_PORT; no CA store in the scratch image → S3 client panic, core 5c17c28) |
+| 0.10 Chart | Done | ortus-deploy 979fa35 | Chart written; k3d test found and fixed two real bugs (service-link env vars clobbering ORTUS_WEB_PORT; no CA store in the scratch image → S3 client panic, core 5c17c28) |
 | 0.11 CI matrix and story harness | Done | ortus e0e49c3 | `stories/` Playwright harness; steps.json from story.py (24 V1 steps; S1.1 and S3.3–4 kept with web stand-ins); every story runs on a fresh install of the release program; CI matrix one-machine × cluster |
 | 0.12 App interface | Done | ortus-core 0ca5eee | `App` trait: switcher entry, migrations, routes under /api/v1/<id>, job kinds, role tasks, services; per-app switch (config default, DB wins); off = gone from switcher, API `not_installed`, jobs wait, tasks not started |
 | 0.13 Cross-app interfaces | Done | ortus-core 0ca5eee | `Services` by trait with `NotInstalled`; first traits Calendar, Contacts, Drive, Chat, Tasks (grow per slice); web not-installed screen in six languages |
 | 0.14 Four programs from pinned versions | Done | ortus ceaa1a5; app repos 9e9876e (mail) 83ca5bf (calendar) e3e6e70 (drive) c48a718 (docs) fa47c32 (chat) 2cf342f (calls) 945fd0a (tasks) | ortus, ortus-mail, ortus-drive, ortus-chat; every app repo is a crate with ci/check.sh and CI |
 
+Slice 0 review (separate reviewer, 2026-11-20): 15 findings; fixed in ortus-core 9c49c23, ortus-deploy dce3e7a and ortus (install.sh): job claim starvation (high), nested-transaction hang now fails after 30 s (high, documented rule for handlers), commit after a failed statement, PostgreSQL TLS (sslmode), backup partial pruning and skipped files, install backup before replacing the program, chart startup allowance, GitOps secret, backup sizing, deferred foreign keys on restore, worker error logging, secrets out of Debug. Left as notes: backups and files are read whole into memory (streaming before slice 5); SQLite decimal values become text in backups; `helm rollback` after a migration needs a restore (documented).
+
 ## Slice 1: Sign-in and admin base
 
-Not started; break it into tasks when it begins. It must include, besides the plan in `GOAL.md`:
+Boards: AdminFirstRun, AdminUsers, AdminSignIn, WebWelcome, WebPersonal, AppSwitcher (and the sign-in pages, which have no board: built in the same style). Story steps S2.1, S2.3 (and S3.1, S3.6 groundwork). Gate A: S2.1 and S2.3 pass; a new user signs in with a passkey.
 
-- The project website at the root (a setting that only the public demo turns on), in six languages, with a Sign in link.
-- The sign-in and sign-up pages, open sign-up with an email check, the demo limits from `GOAL.md` (quotas, account cap, 30-day expiry) and the terms and privacy page.
-- After sign-in: the app chooser the first time, then the last app used.
+| Task | Status | Commit | Notes |
+| --- | --- | --- | --- |
+| 1.1 Accounts, roles and sessions: tables, session cookie, CSRF, `/api/v1/me`, auth on every API route | Done | ortus-core 52442e5 | Token hash only in DB; __Host- cookie over HTTPS; X-Requested-With: ortus on every change; `public_url` setting |
+| 1.2 First-start token and the owner account (setup link in the log) | Done | ortus-core 52442e5 | Printed once; `ortus setup-link` for a new one; ORTUS_SETUP_TOKEN for automation |
+| 1.3 Password with one-time code (TOTP) and a recovery kit | Done | ortus-core ed2f606 | Argon2id; password always needs the code until the sign-in policy (1.15) can relax it; attempt limits per address and IP |
+| 1.4 Passkeys (own WebAuthn: ES256, EdDSA, RS256; no MPL webauthn-rs) | Done | ortus-core f43d0ed | aws-lc-rs signatures, own CBOR reader; discoverable passkeys, user verification required; Chrome virtual-authenticator test |
+| 1.5 Sign-in and sign-up pages; open sign-up with an email check; outgoing mail for codes | In progress | | |
+| 1.6 Demo limits: quotas, no outside mail, account caps, 30-day expiry job, terms and privacy page | | | |
+| 1.7 Project website at the root (setting), six languages, Sign in link | | | |
+| 1.8 After sign-in: app chooser the first time, then the last app used | | | |
+| 1.9 Audit events (base; the hash chain is slice 2) | | | |
+| 1.10 OpenID Connect provider (code + PKCE, ES256 ID tokens, discovery, JWKS) | | | |
+| 1.11 Broker to outside OpenID Connect providers, tested against a test IdP in CI | | | |
+| 1.12 Broker to outside SAML providers | | | |
+| 1.13 Admin: first run checklist (AdminFirstRun) | | | |
+| 1.14 Admin: users and groups, invite, CSV and directory import, quotas (AdminUsers) | | | |
+| 1.15 Admin: sign-in policy and devices (AdminSignIn) | | | |
+| 1.16 Welcome page and personal settings (WebWelcome, WebPersonal) | | | |
+| 1.17 Story tests S2.1 and S2.3; passkey sign-in in the browser (virtual authenticator) | | | |
+| 1.18 First demo deploy at ortus.cc | | | |
+| 1.19 Slice review by a separate reviewer; Gate A | | | |
 
 ## Slices 2 to 13
 

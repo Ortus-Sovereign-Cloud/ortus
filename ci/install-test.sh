@@ -61,7 +61,7 @@ if [ "${ORTUS_INSTALL_TEST_SYSTEM:-}" = 1 ]; then
   sudo install/install.sh "$work/ortus-next"
   wait_health "$url"
   sudo test -x /usr/local/bin/ortus.previous
-  sudo sh -c 'ls -d /var/lib/ortus/backups/before-upgrade-*' | grep -q .
+  [ "$(sudo sh -c 'ls -d /var/lib/ortus/backups/2*Z' | wc -l)" -ge 2 ] || { echo "install-test: no backup before the upgrade" >&2; exit 1; }
   # Some data, then a restore into an empty data directory.
   sudo -u ortus sh -c 'mkdir -p /var/lib/ortus/files/drive && echo "flood report" > /var/lib/ortus/files/drive/report.txt'
   sudo -u ortus env ORTUS_CONFIG=/etc/ortus/ortus.toml sh -c 'cd / && /usr/local/bin/ortus backup /var/lib/ortus/backups/test'

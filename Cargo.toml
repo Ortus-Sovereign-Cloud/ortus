@@ -49,3 +49,11 @@ ortus-calls = { path = ".deps/ortus-calls" }
 
 [patch."https://github.com/Ortus-Sovereign-Cloud/ortus-tasks"]
 ortus-tasks = { path = ".deps/ortus-tasks" }
+
+# Small debug builds: line numbers for our own code, no debug info for
+# dependencies (a full debug build of the tests took 25 GB).
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false

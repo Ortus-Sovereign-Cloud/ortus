@@ -9,7 +9,9 @@ test("a fresh installation answers and shows the web client", async ({ page, ort
   const health = await (await fetch(`${ortus.url}/api/v1/health`)).json();
   expect(health.status).toBe("ok");
   await page.goto("/");
-  await expect(page.locator("ortus-shell")).toBeAttached();
+  await expect(page.locator("ortus-root")).toBeAttached();
+  // A new installation asks for its first owner.
+  await expect(page).toHaveURL(/\/setup$/);
 });
 
 test("the installation keeps its data where its shape says", async ({ ortus }) => {
