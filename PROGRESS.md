@@ -92,6 +92,24 @@ Done when mail goes to and from an outside server in CI, an IMAP app works, and 
 | 3.13 CI: an outside mail server (container) exchanging mail both ways, with test DNS | Next | | |
 | 3.14 Slice review by a separate reviewer | | | |
 
-## Slices 4 to 13
+## Slice 4: Calendar and contacts
+
+Done when an invitation makes a round trip with an outside server and a CalDAV app works. The app lives in ortus-calendar; iCalendar and vCard parsing and recurrence use calcard (Stalwart, Apache-2.0 OR MIT); the DAV servers and scheduling are our own.
+
+| Task | State | Commit | Notes |
+| --- | --- | --- | --- |
+| 4.0 Calendar store: calendars per person, events kept as iCalendar (UID, recurrence, exceptions, attendees, alarms), ETags and sync tokens, expansion of recurring events into a time range; both shapes | | | |
+| 4.1 Contacts store: address books per person (vCard), plus the installation's people as a read-only directory; both shapes | | | |
+| 4.2 CalDAV (RFC 4791, 6578): discovery (/.well-known/caldav, principal, home set), PROPFIND, calendar-query and multiget REPORTs, sync-collection, PUT/DELETE with ETags, MKCALENDAR; app passwords; tested with a real CalDAV client | | | |
+| 4.3 CardDAV (RFC 6352): discovery, address books, addressbook-query and multiget, sync, PUT/DELETE; tested with a real client | | | |
+| 4.4 Scheduling: invitations to colleagues straight into their calendars; to outside people by mail (iTIP/iMIP REQUEST, CANCEL), replies read from incoming mail (REPLY); incoming invitations shown in mail with Accept, Maybe, Decline, Propose; the label policy decides before an invitation leaves | | | |
+| 4.5 Free and busy: who is free when, for colleagues (respecting private events), the "Times that work" card in Compose and in the calendar | | | |
+| 4.6 Web calendar (WebCalendar): week view, creating and editing events, attendees with their free/busy, recurrence, RSVP; six languages | | | |
+| 4.7 Web contacts (WebContacts): the directory and one's own contacts, editing; six languages | | | |
+| 4.8 Mail and calendar together: the agenda column of the Main board, the invite card in a thread, the catch-up card counting invites | | | |
+| 4.9 CI: an invitation round trip with the outside server (Postfix), and a CalDAV app syncing | | | |
+| 4.10 Slice review by a separate reviewer | | | |
+
+## Slices 5 to 13
 
 Not started. Break each into tasks when it begins.
