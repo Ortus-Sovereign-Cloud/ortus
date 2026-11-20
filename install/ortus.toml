@@ -1,6 +1,11 @@
 # Ortus settings. Every setting can also be given as an ORTUS_* variable in
 # /etc/ortus/ortus.env, which wins over this file. Secrets (database
 # passwords, S3 keys) belong in ortus.env.
+#
+# The secrets Ortus keeps in its database are sealed with the key in
+# data_dir/secrets.key (made on the first start), or ORTUS_SECRETS_KEY in
+# ortus.env. Keep a copy of it somewhere safe: backups never carry it, and
+# a restore needs it.
 
 roles = ["all"]
 data_dir = "/var/lib/ortus"

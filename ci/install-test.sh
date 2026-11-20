@@ -72,6 +72,8 @@ if [ "${ORTUS_INSTALL_TEST_SYSTEM:-}" = 1 ]; then
   sudo chown -R ortus:ortus "$work/backup"
   sudo chmod 0755 "$work"
   sudo -u ortus env ORTUS_CONFIG=/etc/ortus/ortus.toml sh -c "cd / && /usr/local/bin/ortus restore $work/backup"
+  # A backup never carries the secrets key: the operator brings it along.
+  sudo install -o ortus -g ortus -m 0600 "$work/old-data/secrets.key" /var/lib/ortus/secrets.key
   sudo systemctl start ortus
   wait_health "$url"
   [ "$(sudo cat /var/lib/ortus/files/drive/report.txt)" = "flood report" ]
