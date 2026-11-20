@@ -31,6 +31,8 @@ export interface Installation {
   dataDir: string;
   /** The PostgreSQL schema of a cluster-shaped installation. */
   schema?: string;
+  /** The first-start token: `/setup#<token>` creates the first owner. */
+  setupToken: string;
   /** Lines the program has printed so far, for failure reports. */
   log: string[];
   stop(): Promise<void>;
@@ -83,6 +85,9 @@ export async function startOrtus(env: Record<string, string> = {}): Promise<Inst
     ORTUS_WEB_IP: "127.0.0.1",
     ORTUS_WEB_PORT: String(port),
     RWS_CONFIG_SHUTDOWN_DELAY_SECS: "0",
+    ORTUS_SETUP_TOKEN: randomBytes(16).toString("hex"),
+    // localhost, not 127.0.0.1: passkeys need a host name as their relying party.
+    ORTUS_PUBLIC_URL: `http://localhost:${port}`,
   };
   let dropSchema: (() => Promise<void>) | undefined;
   let schemaName: string | undefined;
@@ -116,13 +121,14 @@ export async function startOrtus(env: Record<string, string> = {}): Promise<Inst
   });
   child.stdout?.on("data", (chunk: Buffer) => log.push(chunk.toString()));
   child.stderr?.on("data", (chunk: Buffer) => log.push(chunk.toString()));
-  const url = `http://127.0.0.1:${port}`;
+  const url = settings.ORTUS_PUBLIC_URL!;
   await waitForHealth(url, child, log);
   return {
     url,
     shape: which,
     dataDir,
     schema: schemaName,
+    setupToken: settings.ORTUS_SETUP_TOKEN!,
     log,
     async stop() {
       if (child.exitCode === null) {

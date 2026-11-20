@@ -50,6 +50,7 @@ jobs:
       ORTUS_TEST_S3_ACCESS_KEY: ortusaccess
       ORTUS_TEST_S3_SECRET_KEY: ortussecret
       ORTUS_REQUIRE_S3: "1"
+      ORTUS_REQUIRE_LDAP: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -74,6 +75,8 @@ jobs:
             sleep 2
           done
           cd stories && npm ci && npx playwright install --with-deps chromium
+      - name: A test directory (OpenLDAP) for story S2.3
+        run: ci/fetch.sh && .deps/ortus-core/ci/ldap-test.sh 51389 | sed 's/^export //' >> "$GITHUB_ENV"
       - run: ci/check.sh
       - uses: actions/upload-artifact@v4
         if: failure()

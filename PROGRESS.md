@@ -45,10 +45,10 @@ Boards: AdminFirstRun, AdminUsers, AdminSignIn, WebWelcome, WebPersonal, AppSwit
 | 1.13 Admin: first run checklist (AdminFirstRun) | Done | ortus-core db485b0 | Six steps from real state (recovery kit, HTTPS address, people, sign-in policy, data place confirmed, backup checked by `ortus check-backup`); installation facts without secrets; second-owner nudge |
 | 1.14 Admin: users and groups, invite, CSV and directory import, quotas (AdminUsers) | Done | ortus-core 840055d, c69173e | Invitations by mail (7 days, once), CSV import with per-line report, roles (never above one's own, last owner kept), suspend, quotas, reset sign-in, devices; LDAP/AD directory sync tested against a real OpenLDAP (test only) |
 | 1.15 Admin: sign-in policy and devices (AdminSignIn) | Done | ortus-core 5402a86 | Passwords (always with app code) on/off, session idle and maximum days; off is refused while someone depends on a password; board's QR / smart card rows map to passkeys and organisation sign-in (DECISIONS) |
-| 1.16 Welcome page and personal settings (WebWelcome, WebPersonal) | Next | | |
-| 1.17 Story tests S2.1 and S2.3; passkey sign-in in the browser (virtual authenticator) | | | |
+| 1.16 Welcome page and personal settings (WebWelcome, WebPersonal) | Done | ortus-core c6710fd | Invitation link page, first-day steps from real state, people from one's groups, app cards; settings: devices, language, text size, motion, name |
+| 1.17 Story tests S2.1 and S2.3; passkey sign-in in the browser (virtual authenticator) | Done | ortus (this commit) | Both shapes; S2.1 creates the owner, saves the kit, adds a passkey, signs out and back in with it, works the checklist; S2.3 connects a test OpenLDAP and syncs people and groups; core pinned to eb066fd |
 | 1.18 First demo deploy at ortus.cc | Done | ortus f87ca40 | Live 2026-11-20: website, open sign-up (codes DKIM-signed as ortus.cc), passkeys; brought forward before 1.10–1.17 (DECISIONS); redeploys after each green ortus CI |
-| 1.19 Slice review by a separate reviewer; Gate A | | | |
+| 1.19 Slice review by a separate reviewer; Gate A | Next | | |
 
 ## Slices 2 to 13
 
