@@ -1,0 +1,25 @@
+# A backup of Ortus into /var/lib/ortus/backups, keeping the newest seven.
+# Copy them off the machine: a backup on the same disk does not survive it.
+[Unit]
+Description=Ortus backup
+Documentation=https://github.com/Ortus-Sovereign-Cloud/ortus
+After=ortus.service
+
+[Service]
+Type=oneshot
+User=ortus
+Group=ortus
+Environment=ORTUS_CONFIG=/etc/ortus/ortus.toml
+Environment=ORTUS_BACKUP_KEEP=7
+EnvironmentFile=-/etc/ortus/ortus.env
+ExecStart=/usr/local/lib/ortus/backup.sh /var/lib/ortus/backups
+RuntimeDirectory=ortus-backup
+WorkingDirectory=/run/ortus-backup
+UMask=0027
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/ortus
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX

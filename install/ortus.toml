@@ -1,0 +1,20 @@
+# Ortus settings. Every setting can also be given as an ORTUS_* variable in
+# /etc/ortus/ortus.env, which wins over this file. Secrets (database
+# passwords, S3 keys) belong in ortus.env.
+
+roles = ["all"]
+data_dir = "/var/lib/ortus"
+
+[web]
+# Ortus listens here; put a TLS reverse proxy in front of it.
+ip = "127.0.0.1"
+port = 7878
+
+# PostgreSQL instead of SQLite in data_dir:
+# [database]
+# url = "postgres://ortus@db.example.org/ortus"
+
+# S3 instead of a directory in data_dir:
+# [files.s3]
+# endpoint = "https://s3.example.org"
+# bucket = "ortus"

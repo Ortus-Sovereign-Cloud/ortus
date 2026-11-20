@@ -1,0 +1,12 @@
+[package]
+name = "ortus"
+description = "Ortus, all in one: every app in one program."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+ortus-core = { path = "../../.deps/ortus-core" }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
