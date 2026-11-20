@@ -16,7 +16,7 @@ trap 'rm -rf "$work"' EXIT
 
 # A staged install puts every file in place and never overwrites settings.
 ORTUS_ROOT="$work/root" install/install.sh "$binary" >/dev/null
-for f in usr/local/bin/ortus usr/local/lib/ortus/backup.sh etc/ortus/ortus.toml etc/ortus/ortus.env \
+for f in usr/local/bin/ortus etc/ortus/ortus.toml etc/ortus/ortus.env \
   etc/systemd/system/ortus.service etc/systemd/system/ortus-backup.service etc/systemd/system/ortus-backup.timer; do
   [ -e "$work/root/$f" ] || { echo "install-test: staged install lacks $f" >&2; exit 1; }
 done
@@ -27,7 +27,7 @@ grep -q "# changed" "$work/root/etc/ortus/ortus.toml" || { echo "install-test: s
 # The unit files are valid for systemd.
 mkdir -p "$work/units"
 for unit in ortus.service ortus-backup.service ortus-backup.timer; do
-  sed -e "s#/usr/local/bin/ortus#$binary#; s#/usr/local/lib/ortus/backup.sh#$(pwd)/install/backup.sh#" "install/$unit" > "$work/units/$unit"
+  sed -e "s#/usr/local/bin/ortus#$binary#" "install/$unit" > "$work/units/$unit"
 done
 # Only what systemd says about our files counts; the machine's own units
 # may have warnings of their own.
@@ -80,7 +80,7 @@ if [ "${ORTUS_INSTALL_TEST_SYSTEM:-}" = 1 ]; then
   [ "$(systemctl show ortus -p Result --value)" = success ]
   sudo systemctl disable --now ortus-backup.timer
   sudo systemctl disable ortus
-  sudo rm -rf /var/lib/ortus /etc/ortus /usr/local/bin/ortus /usr/local/bin/ortus.previous /usr/local/lib/ortus \
+  sudo rm -rf /var/lib/ortus /etc/ortus /usr/local/bin/ortus /usr/local/bin/ortus.previous \
     /etc/systemd/system/ortus.service /etc/systemd/system/ortus-backup.service /etc/systemd/system/ortus-backup.timer
   sudo userdel ortus
   sudo systemctl daemon-reload
@@ -96,11 +96,11 @@ elif systemctl --user show-environment >/dev/null 2>&1; then
   trap 'systemctl --user stop "$unit" 2>/dev/null || true; rm -rf "$work"' EXIT
   [ "$(systemctl --user show "$unit" -p ActiveState --value)" = active ]
   wait_health "http://127.0.0.1:$port/api/v1/health"
-  ORTUS_DATA_DIR="$work/data" ORTUS_BIN="$binary" ORTUS_BACKUP_KEEP=2 install/backup.sh "$work/backups" >/dev/null
-  ORTUS_DATA_DIR="$work/data" ORTUS_BIN="$binary" ORTUS_BACKUP_KEEP=2 install/backup.sh "$work/backups" >/dev/null
-  sleep 1
-  ORTUS_DATA_DIR="$work/data" ORTUS_BIN="$binary" ORTUS_BACKUP_KEEP=2 install/backup.sh "$work/backups" >/dev/null
-  [ "$(find "$work/backups" -mindepth 1 -maxdepth 1 -type d | wc -l)" = 2 ] || { echo "install-test: backup.sh kept the wrong number" >&2; exit 1; }
+  for _ in 1 2 3; do
+    ORTUS_DATA_DIR="$work/data" "$binary" backup --into "$work/backups" --keep 2 >/dev/null
+    sleep 1
+  done
+  [ "$(find "$work/backups" -mindepth 1 -maxdepth 1 -type d | wc -l)" = 2 ] || { echo "install-test: backups were not rotated" >&2; exit 1; }
   systemctl --user stop "$unit"
   result="$(systemctl --user show "$unit" -p Result --value 2>/dev/null || echo success)"
   [ -z "$result" ] || [ "$result" = success ] || { echo "install-test: stop result $result" >&2; exit 1; }

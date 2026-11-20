@@ -10,9 +10,8 @@ Type=oneshot
 User=ortus
 Group=ortus
 Environment=ORTUS_CONFIG=/etc/ortus/ortus.toml
-Environment=ORTUS_BACKUP_KEEP=7
 EnvironmentFile=-/etc/ortus/ortus.env
-ExecStart=/usr/local/lib/ortus/backup.sh /var/lib/ortus/backups
+ExecStart=/usr/local/bin/ortus backup --into /var/lib/ortus/backups --keep 7
 RuntimeDirectory=ortus-backup
 WorkingDirectory=/run/ortus-backup
 UMask=0027

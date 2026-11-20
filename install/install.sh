@@ -38,7 +38,6 @@ if [ -z "$root" ]; then
 fi
 
 bin="$root/usr/local/bin"
-lib="$root/usr/local/lib/ortus"
 etc="$root/etc/ortus"
 data="$root/var/lib/ortus"
 units="$root/etc/systemd/system"
@@ -53,7 +52,7 @@ owner() {
   if [ -z "$root" ]; then chown "$@"; fi
 }
 
-install -d -m 0755 "$bin" "$lib" "$etc" "$units"
+install -d -m 0755 "$bin" "$etc" "$units"
 install -d -m 0750 "$data" "$data/backups"
 owner ortus:ortus "$data" "$data/backups"
 
@@ -78,7 +77,6 @@ if [ -e "$bin/ortus" ]; then
 fi
 install -m 0755 "$binary" "$bin/ortus.new"
 mv -f "$bin/ortus.new" "$bin/ortus"
-install -m 0755 "$here/backup.sh" "$lib/backup.sh"
 for unit in ortus.service ortus-backup.service ortus-backup.timer; do
   install -m 0644 "$here/$unit" "$units/$unit"
 done
