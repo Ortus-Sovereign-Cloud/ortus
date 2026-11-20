@@ -34,11 +34,11 @@ Boards: AdminFirstRun, AdminUsers, AdminSignIn, WebWelcome, WebPersonal, AppSwit
 | 1.2 First-start token and the owner account (setup link in the log) | Done | ortus-core 52442e5 | Printed once; `ortus setup-link` for a new one; ORTUS_SETUP_TOKEN for automation |
 | 1.3 Password with one-time code (TOTP) and a recovery kit | Done | ortus-core ed2f606 | Argon2id; password always needs the code until the sign-in policy (1.15) can relax it; attempt limits per address and IP |
 | 1.4 Passkeys (own WebAuthn: ES256, EdDSA, RS256; no MPL webauthn-rs) | Done | ortus-core f43d0ed | aws-lc-rs signatures, own CBOR reader; discoverable passkeys, user verification required; Chrome virtual-authenticator test |
-| 1.5 Sign-in and sign-up pages; open sign-up with an email check; outgoing mail for codes | In progress | | |
-| 1.6 Demo limits: quotas, no outside mail, account caps, 30-day expiry job, terms and privacy page | | | |
-| 1.7 Project website at the root (setting), six languages, Sign in link | | | |
-| 1.8 After sign-in: app chooser the first time, then the last app used | | | |
-| 1.9 Audit events (base; the hash chain is slice 2) | | | |
+| 1.5 Sign-in and sign-up pages; open sign-up with an email check; outgoing mail for codes | Done | ortus-core 75e5136 | lettre SMTP via job queue; code in six languages; no account enumeration; Mailpit in CI (test only) |
+| 1.6 Demo limits: quotas, no outside mail, account caps, 30-day expiry job, terms and privacy page | Done | ortus-core 75e5136 | caps per day/address; hourly expiry with App::forget_user; quota stored on account (enforced by drive, slice 5); 'no outside mail' is enforced by the mail app (slice 3) |
+| 1.7 Project website at the root (setting), six languages, Sign in link | Done | ortus-core d645651 | [site] website; GET /api/v1/session for visitors |
+| 1.8 After sign-in: app chooser the first time, then the last app used | Done | ortus-core f03c977 | PUT /api/v1/me/place |
+| 1.9 Audit events (base; the hash chain is slice 2) | Next | | |
 | 1.10 OpenID Connect provider (code + PKCE, ES256 ID tokens, discovery, JWKS) | | | |
 | 1.11 Broker to outside OpenID Connect providers, tested against a test IdP in CI | | | |
 | 1.12 Broker to outside SAML providers | | | |
