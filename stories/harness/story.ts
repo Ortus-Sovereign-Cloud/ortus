@@ -46,10 +46,13 @@ export const test = base.extend<{ ortus: Installation }, { installations: Map<st
     { scope: "worker" },
   ],
   ortus: async ({ installations }, use, info) => {
-    let started = installations.get(info.file);
+    // Steps are declared in this file (see step()), so the spec file is
+    // the first part of the title path, not info.file.
+    const file = info.titlePath[0] ?? info.file;
+    let started = installations.get(file);
     if (!started) {
       started = startOrtus();
-      installations.set(info.file, started);
+      installations.set(file, started);
     }
     const installation = await started;
     await use(installation);

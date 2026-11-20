@@ -164,8 +164,25 @@ Done when S1.5, S1.9, S1.10 and S3.7 pass and the filed PDF's signature verifies
 | 7.6 Records (WebRecordFiled): cases and records filed at the end of a route, never edited or deleted, kept by retention; verify and download; six languages | Done | ortus-tasks d787395; ortus-core c2bfbf4 | Cases and references (0114-001), kept ten years, no route changes or deletes them, readers are the route's people and administrators; record page with the first page, facts, what happened, download and signature checks |
 | 7.7 Read and confirm (WebMustRead): a record or document published as must-read to groups; confirming; who confirmed; on the welcome page; six languages | Done | ortus-tasks d787395; ortus-docs 2dcb223; ortus-core d5d72e5 | Administrators publish a document as must-read to everyone or groups; one confirms one by one; the publisher sees who; the welcome page's step leads there and is done when all are confirmed |
 | 7.8 CI: S1.5, S1.9 (web stand-in for the phone), S1.10 and S3.7 in the browser, both shapes; the filed PDF verifies | Done | ortus stories/specs/approvals.spec.ts | Release program, both shapes: S1.5 task with due time; S1.9 route signed on the web (phone in slices 11 and 12); S1.10 record filed, 2 of 2 valid, pyHanko judges both valid and trusted; S3.7 two policies confirmed. Telling the channel (S1.10) comes with chat in slice 8 |
-| 7.9 Slice review by a separate reviewer | | | |
+| 7.9 Slice review by a separate reviewer | Done | ortus-docs d9f96b7; ortus-tasks a228968 | 1 high, 3 medium, 5 low: the signer read a different text from the one signed (open suggestions read differently; now no route with open suggestions, the review shows what the PDF sets, and links the PDF); record references collided across cases (now unique, retried, files cleaned up); a route could be filed twice (claimed first); the signing password was not rate-limited; a failed commit could leave a duplicate signature (each signature in its own file); off-site task links; keys, review PDFs and names left behind on leaving; the PDF reader could hang or panic on broken input; certificates after 2049. Regression tests in ortus-tasks tests/review.rs and ortus-docs tests/docs.rs |
 
-## Slices 8 to 13
+## Slice 8: Chat with Matrix federation, end-to-end rooms by policy
+
+Done when a room is shared with an independent Matrix server in CI and S1.4 and S3.8 pass.
+
+| Task | State | Commits | Notes |
+| --- | --- | --- | --- |
+| 8.0 Chat store and API: channels (public, private, direct), members, messages with mentions and reactions, threads, edits and deletions, read markers, both shapes; search; retention (chat) and legal hold; forgetting a person | | | |
+| 8.1 Live delivery: one event stream per person (messages, threads, typing, read markers), unread counts, works on every node of a cluster | | | |
+| 8.2 Web chat (WebChat): channels and direct messages, a channel with its thread panel, compose with mentions, reactions, files from Drive; six languages | | | |
+| 8.3 Decisions and tasks from chat: a thread's decision recorded (who, when, audited, found in search), turned into a task (Tasks interface); other apps post to a channel (Chat interface: a record filed tells its channel) | | | |
+| 8.4 Matrix server identity: signing keys (Ed25519), key server, canonical JSON, event hashing and signing, server discovery, signed requests both ways | | | |
+| 8.5 Matrix rooms over federation: channels as rooms (room version 10), events and authorisation rules, joins and invites both ways, sending and receiving transactions with retries, backfill | | | |
+| 8.6 Federation policy: only the organisations allowed in Sovereignty (with chat), labels that keep a channel inside, audit of what leaves | | | |
+| 8.7 End-to-end rooms by policy: an administrator allows them; their messages are encrypted in the browser and kept out of search, records and legal hold | | | |
+| 8.8 CI: a room shared with an independent Matrix server; S1.4 and S3.8 in the browser, both shapes | | | |
+| 8.9 Slice review by a separate reviewer | | | |
+
+## Slices 9 to 13
 
 Not started. Break each into tasks when it begins.
