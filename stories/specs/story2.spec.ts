@@ -90,8 +90,10 @@ story("Story 2", () => {
 
     // He copies each record from the table into the DNS provider.
     const records = page.getByRole("row");
-    const value = async (purpose: string) => (await records.filter({ hasText: purpose }).locator("td.value code").getAttribute("title"))!;
-    const name = async (purpose: string) => (await records.filter({ hasText: purpose }).locator("td.name code").textContent())!;
+    // A row by its purpose cell exactly (a random key may contain "spf").
+    const row = (purpose: string) => records.filter({ has: page.getByRole("cell", { name: purpose, exact: true }) });
+    const value = async (purpose: string) => (await row(purpose).locator("td.value code").getAttribute("title"))!;
+    const name = async (purpose: string) => (await row(purpose).locator("td.name code").textContent())!;
     ortus.dns.publish("ministry.example", "MX", [{ preference: 10, exchange: "mail.ministry.example" }]);
     ortus.dns.publish("ministry.example", "TXT", [[await value("SPF")]]);
     const dkim = await value("DKIM RSA");
@@ -102,7 +104,7 @@ story("Story 2", () => {
     await page.getByRole("button", { name: "Check now" }).click();
     await expect(tab).toContainText("Verified");
     for (const purpose of ["Receive mail", "SPF", "DKIM RSA", "DMARC"]) {
-      await expect(records.filter({ hasText: purpose }).first()).toContainText("OK");
+      await expect(row(purpose)).toContainText("OK");
     }
     await page.context().close();
   });

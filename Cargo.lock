@@ -399,6 +399,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "776dfebd015e2d8732c684a2c71003674ccb49457b539b9e82151ba38e96dd7c"
 
 [[package]]
+name = "calcard-next"
+version = "3.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "102aeeccb571c36325fc6e6d2f0707a9433922f3d323b4707d081f77a37c23e9"
+dependencies = [
+ "ahash",
+ "encodify",
+ "hashify",
+ "jiff",
+ "thiserror",
+]
+
+[[package]]
 name = "cc"
 version = "1.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1641,6 +1654,7 @@ checksum = "175dc66334db3b9ab9985bf8b61cfed50dc16d20964bb47f9e479adcae984a7f"
 dependencies = [
  "jiff-core",
  "jiff-static",
+ "jiff-tzdb",
  "jiff-tzdb-platform",
  "js-sys",
  "log",
@@ -2428,7 +2442,15 @@ dependencies = [
 name = "ortus-calendar"
 version = "0.1.0"
 dependencies = [
+ "calcard-next",
  "ortus-core",
+ "quick-xml",
+ "rust-embed",
+ "rust-web-server",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-rustls",
 ]
 
 [[package]]

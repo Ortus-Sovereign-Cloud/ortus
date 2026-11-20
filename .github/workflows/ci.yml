@@ -51,6 +51,7 @@ jobs:
       ORTUS_TEST_S3_SECRET_KEY: ortussecret
       ORTUS_REQUIRE_S3: "1"
       ORTUS_REQUIRE_LDAP: "1"
+      ORTUS_REQUIRE_OUTSIDE: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -79,6 +80,10 @@ jobs:
         run: |
           ci/fetch.sh
           out="$(.deps/ortus-core/ci/ldap-test.sh 51389)"
+          echo "${out#export }" >> "$GITHUB_ENV"
+      - name: An outside mail server (Postfix) for the calendar test
+        run: |
+          out="$(.deps/ortus-mail/ci/outside-mail.sh "$RUNNER_TEMP/outside-maildir")"
           echo "${out#export }" >> "$GITHUB_ENV"
       - run: ci/check.sh
       - uses: actions/upload-artifact@v4

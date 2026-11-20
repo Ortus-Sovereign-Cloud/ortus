@@ -107,9 +107,29 @@ Done when an invitation makes a round trip with an outside server and a CalDAV a
 | 4.6 Web calendar (WebCalendar): week view, creating and editing events, attendees with their free/busy, recurrence, RSVP; six languages | Done | ortus-calendar 294d0ff | Week (Mon–Fri), day, month; mini month; calendars shown or hidden; editor with times that work; answers in the event; JSON API on both shapes; browser test at 1440×900 |
 | 4.7 Web contacts (WebContacts): the directory and one's own contacts, editing; six languages | Done | ortus-calendar 80c4393 | Organisation, groups, my contacts with search; contacts edited keep what a phone added; Mail opens Compose; browser test at 1440×900 |
 | 4.8 Mail and calendar together: the agenda column of the Main board, the invite card in a thread, the catch-up card counting invites | Done | ortus-mail 840d585; ortus-calendar 42bcd75; ortus-core 53317f5 | Agenda of today with the next event's countdown; invitation card (when, free or overlapping, Accept/Maybe/Decline); answers by mail shown; Invite chip; catch-up counts invites; mail asks /apps instead of probing |
-| 4.9 CI: an invitation round trip with the outside server (Postfix), and a CalDAV app syncing | | | |
+| 4.9 CI: an invitation round trip with the outside server (Postfix), and a CalDAV app syncing | Done | ortus stories/specs/calendar.spec.ts; ortus-calendar a75a083 | Release program with Postfix: invitation out, REPLY back through Postfix into the calendar and inbox; an outside invitation accepted in the inbox, REPLY reaches Postfix; CalDAV well-known, sync-collection both ways (vdirsyncer runs in ortus-calendar's CI). Also fixed: S2.2 picked DNS rows by substring (a random DKIM key could contain "spf"); an event made before the calendars loaded failed |
 | 4.10 Slice review by a separate reviewer | | | |
 
-## Slices 5 to 13
+## Slice 5: Drive and search (Gate B)
+
+Done when a file is shared by label rules and search finds mail and files.
+
+| Task | State | Commits | Notes |
+| --- | --- | --- | --- |
+| 5.0 Streaming files in the core: chunked writes and range reads on a directory and S3 (multipart), sizes; resumable uploads through the API in parts | | | |
+| 5.1 Drive store: folders, files, versions, trash, stars, recent, quotas on the account; both shapes; file contents in the file interface | | | |
+| 5.2 Drive API: list, folders, upload in parts, download with ranges, rename, move, copy, trash and restore, versions, stars | | | |
+| 5.3 Sharing: people and groups (view, comment, edit), links (view only, expiry, password, no download), the label policy decides every share and the audit log keeps it | | | |
+| 5.4 A shared link's public page (no account): view, download when allowed, password, expiry, opened count | | | |
+| 5.5 Previews: image thumbnails, PDF in the browser, text of documents (DOCX, XLSX, ODT, PDF) for preview and search | | | |
+| 5.6 Search index in the core: one index on both shapes (SQLite FTS5, PostgreSQL full text), apps index their items, results only what the person may see | | | |
+| 5.7 Mail, calendar, contacts and drive feed the index; files from mail ("From email") saved to Drive | | | |
+| 5.8 Web drive (WebDrive): folders, list, suggested, upload panel, quota; six languages | | | |
+| 5.9 File preview and share dialog (WebFilePreview); six languages | | | |
+| 5.10 Search and commands (WebSearch, Ctrl K in the shell): mail, files, events, people; filters; six languages | | | |
+| 5.11 CI: a share blocked by a label and allowed by another, search across apps, both shapes | | | |
+| 5.12 Slice review by a separate reviewer | | | |
+
+## Slices 6 to 13
 
 Not started. Break each into tasks when it begins.
