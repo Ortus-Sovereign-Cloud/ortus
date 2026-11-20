@@ -1,0 +1,5 @@
+target
+.git
+.deps/*/target
+.deps/*/web/node_modules
+.deps/*/.git

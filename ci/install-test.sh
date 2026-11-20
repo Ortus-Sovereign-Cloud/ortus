@@ -29,7 +29,9 @@ mkdir -p "$work/units"
 for unit in ortus.service ortus-backup.service ortus-backup.timer; do
   sed -e "s#/usr/local/bin/ortus#$binary#; s#/usr/local/lib/ortus/backup.sh#$(pwd)/install/backup.sh#" "install/$unit" > "$work/units/$unit"
 done
-verify="$(systemd-analyze verify --man=no "$work/units/ortus.service" "$work/units/ortus-backup.service" "$work/units/ortus-backup.timer" 2>&1 | grep -v -e 'Failed to load /proc' -e 'getpwnam' -e "User=ortus" -e "Group=ortus" || true)"
+# Only what systemd says about our files counts; the machine's own units
+# may have warnings of their own.
+verify="$(systemd-analyze verify --man=no "$work/units/ortus.service" "$work/units/ortus-backup.service" "$work/units/ortus-backup.timer" 2>&1 | grep -F "$work/units/" | grep -v -e "User=ortus" -e "Group=ortus" || true)"
 if [ -n "$verify" ]; then echo "install-test: systemd-analyze: $verify" >&2; exit 1; fi
 
 wait_health() {

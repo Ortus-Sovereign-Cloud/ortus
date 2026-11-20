@@ -15,8 +15,8 @@ Newest work at the bottom of each slice. Status is Done, In progress, Next or Ow
 | 0.6 Configuration and roles | Done | ortus-core 9e48ee3 | Mail and media roles open nothing yet |
 | 0.7 Public API skeleton | Done | ortus-core 363321d, 7227206 | `api/openapi.json` is generated; a test fails when stale |
 | 0.8 Web shell, six languages, right to left | Done | ortus-core 3ec3985 | 18 browser tests; design match checked by eye only; translations need native readers; PostgreSQL has no TLS yet |
-| 0.9 One-machine install | Next | | |
-| 0.10 Chart | | | |
+| 0.9 One-machine install | Done | ortus-core ffa2d1f, ortus 865b259 | `ortus serve/backup/check-backup/restore/version`; engine-independent backups (SQLite+dir ↔ PostgreSQL+S3); hardened systemd unit, daily backup timer, upgrade with backup and rollback; CI installs for real. One local test run used sudo here by mistake before the real install was gated to CI; it removed everything it made |
+| 0.10 Chart | Next | | |
 | 0.11 CI matrix and story harness | | | |
 | 0.12 App interface | | | |
 | 0.13 Cross-app interfaces | | | |
