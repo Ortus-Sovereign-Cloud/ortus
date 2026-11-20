@@ -117,8 +117,8 @@ Done when a file is shared by label rules and search finds mail and files.
 | Task | State | Commits | Notes |
 | --- | --- | --- | --- |
 | 5.0 Streaming files in the core: chunked writes and range reads on a directory and S3 (multipart), sizes; resumable uploads through the API in parts | Done | ortus-core e78690e | Files::writer (8 MiB parts), read_range, size; local writes go through <root>.writing and appear whole; tested 20 MiB on both stores. Resumable uploads are the drive's (5.2) |
-| 5.1 Drive store: folders, files, versions, trash, stars, recent, quotas on the account; both shapes; file contents in the file interface | | | |
-| 5.2 Drive API: list, folders, upload in parts, download with ranges, rename, move, copy, trash and restore, versions, stars | | | |
+| 5.1 Drive store: folders, files, versions, trash, stars, recent, quotas on the account; both shapes; file contents in the file interface | Done | ortus-drive 56658af | One owner per tree; roles view/comment/edit/owner through shares on an item or a folder above, to people or groups, with expiry; versions keep contents in the file interface; trash hides insides; quota counts every version |
+| 5.2 Drive API: list, folders, upload in parts, download with ranges, rename, move, copy, trash and restore, versions, stars | Done | ortus-drive 56658af | Parts (≤16 MiB) kept as files until finish, then written in one multipart stream (cluster-safe); downloads streamed from the store (rws stream_pipe), Range and 416; inline only for images, PDF, text, under a sandbox CSP; hourly sweep of stale uploads and month-old trash |
 | 5.3 Sharing: people and groups (view, comment, edit), links (view only, expiry, password, no download), the label policy decides every share and the audit log keeps it | | | |
 | 5.4 A shared link's public page (no account): view, download when allowed, password, expiry, opened count | | | |
 | 5.5 Previews: image thumbnails, PDF in the browser, text of documents (DOCX, XLSX, ODT, PDF) for preview and search | | | |
