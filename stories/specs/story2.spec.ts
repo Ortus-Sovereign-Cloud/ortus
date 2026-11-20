@@ -172,6 +172,10 @@ story("Story 2", () => {
     // He started cautiously: DMARC at p=none, so spoofed mail still lands.
     ortus.dns.publish("_dmarc.ministry.example", "TXT", [["v=DMARC1; p=none; rua=mailto:dmarc-reports@ministry.example"]]);
     ortus.dns.publish("mail.ministry.example", "A", ["192.0.2.10"]);
+    // The reporting provider's own records: reports are read only when they
+    // really come from it.
+    ortus.dns.publish("google.com", "TXT", [["v=spf1 ip4:127.0.0.1 -all"]]);
+    ortus.dns.publish("_dmarc.google.com", "TXT", [["v=DMARC1; p=reject"]]);
     await page.goto("/admin/domains");
     await page.getByRole("button", { name: "Check now" }).click();
     await expect(page.getByRole("tab", { name: /ministry\.example/ })).toContainText("Needs 1 fix");
@@ -185,6 +189,8 @@ story("Story 2", () => {
       const message = `From: noreply-dmarc-support@google.com\nTo: dmarc-reports@ministry.example\nSubject: Report domain: ministry.example\nMessage-ID: <s29-${day}@google.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary="b"\n\n--b\nContent-Type: application/gzip; name="google.com!ministry.example!${day}.xml.gz"\nContent-Disposition: attachment\nContent-Transfer-Encoding: base64\n\n${attachment}\n--b--\n`;
       expect(await deliver(ortus.smtpPort, "noreply-dmarc-support@google.com", "dmarc-reports@ministry.example", message)).toMatch(/^250/);
     }
+    // They are read just after they arrive.
+    await expect.poll(async () => JSON.stringify(await (await page.request.get("/api/v1/mail/admin/deliverability?days=14")).json()), { timeout: 15_000 }).toContain('"ours":true');
     await page.goto("/admin/deliverability");
     const senders = page.getByRole("region", { name: "Who sends as ministry.example" });
     await expect(senders.getByRole("listitem")).toHaveCount(1);
