@@ -34,6 +34,8 @@ export interface Installation {
   schema?: string;
   /** The DNS server this installation asks (records a story publishes). */
   dns: Dns;
+  /** Where the installation receives mail (SMTP), on 127.0.0.1. */
+  smtpPort: number;
   /** The first-start token: `/setup#<token>` creates the first owner. */
   setupToken: string;
   /** Lines the program has printed so far, for failure reports. */
@@ -93,6 +95,11 @@ export async function startOrtus(env: Record<string, string> = {}): Promise<Inst
     ORTUS_PUBLIC_URL: `http://localhost:${port}`,
     ORTUS_MAIL_HOSTNAME: "mail.ministry.example",
   };
+  // The mail role on free ports (25, 587 and 143 need privileges).
+  const smtpPort = await freePort();
+  settings.ORTUS_SMTP_LISTEN = `127.0.0.1:${smtpPort}`;
+  settings.ORTUS_SUBMISSION_LISTEN = `127.0.0.1:${await freePort()}`;
+  settings.ORTUS_IMAP_LISTEN = `127.0.0.1:${await freePort()}`;
   const dns = await startDns();
   settings.ORTUS_DNS_SERVERS = dns.address;
   let dropSchema: (() => Promise<void>) | undefined;
@@ -135,6 +142,7 @@ export async function startOrtus(env: Record<string, string> = {}): Promise<Inst
     dataDir,
     schema: schemaName,
     setupToken: settings.ORTUS_SETUP_TOKEN!,
+    smtpPort,
     dns,
     log,
     async stop() {

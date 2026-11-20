@@ -20,16 +20,13 @@ export async function startDns(): Promise<Dns> {
     const answers = (zone.get(key) ?? []).map((data) => ({ name: question.name, type: question.type, ttl: 60, data }) as packet.Answer);
     return packet.encode({ id: query.id, type: "response", flags: packet.AUTHORITATIVE_ANSWER | (answers.length ? 0 : 3), questions: query.questions, answers });
   };
-  const udp = dgram.createSocket("udp4");
-  udp.on("message", (message, from) => {
+  const onQuery = (udp: dgram.Socket) => (message: Buffer, from: dgram.RemoteInfo) => {
     try {
       udp.send(answer(packet.decode(message)), from.port, from.address);
     } catch {
       // a broken query gets no answer
     }
-  });
-  await new Promise<void>((done) => udp.bind(0, "127.0.0.1", done));
-  const port = udp.address().port;
+  };
   const tcp = net.createServer((socket) => {
     let buffer = Buffer.alloc(0);
     socket.on("data", (chunk) => {
@@ -44,14 +41,31 @@ export async function startDns(): Promise<Dns> {
       }
     });
   });
-  await new Promise<void>((done) => tcp.listen(port, "127.0.0.1", done));
+  // UDP picks a free port; TCP needs the same number, which something else
+  // may hold: then try another.
+  let udp: dgram.Socket | undefined;
+  let port = 0;
+  for (let attempt = 0; attempt < 10 && !udp; attempt++) {
+    const socket = dgram.createSocket("udp4");
+    socket.on("message", onQuery(socket));
+    await new Promise<void>((done) => socket.bind(0, "127.0.0.1", done));
+    port = socket.address().port;
+    const listening = await new Promise<boolean>((done) => {
+      tcp.once("error", () => done(false));
+      tcp.listen(port, "127.0.0.1", () => done(true));
+    });
+    if (listening) udp = socket;
+    else socket.close();
+  }
+  if (!udp) throw new Error("the test DNS server found no free port");
+  const bound = udp;
   return {
     address: `127.0.0.1:${port}`,
     publish(name, type, data) {
       zone.set(`${name.toLowerCase().replace(/\.$/, "")} ${type}`, data);
     },
     async stop() {
-      udp.close();
+      bound.close();
       await new Promise((done) => tcp.close(done));
     },
   };

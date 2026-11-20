@@ -9,8 +9,12 @@
 //       (a test OpenLDAP, ORTUS_TEST_LDAP; CI requires it).
 // S2.8  Taras sets data location, keys, federation partners and
 //       retention on the Sovereignty screen; each change is audited.
+// S2.9  After two clean weeks of DMARC reports (our servers pass), Taras
+//       switches DMARC from p=none to quarantine and the domain is verified.
 import { join } from "node:path";
 import type { BrowserContext, Page } from "@playwright/test";
+import { gzipSync } from "node:zlib";
+import { deliver } from "../harness/smtp.ts";
 import { expect, step, story, test } from "../harness/story.ts";
 
 /** A virtual authenticator for this browser, as a phone or laptop would have. */
@@ -161,6 +165,42 @@ story("Story 2", () => {
     expect(retention.events.length).toBeGreaterThanOrEqual(1);
     await page.getByRole("button", { name: "Check now" }).click();
     await expect(page.getByText(/last check .* OK/)).toBeVisible();
+    await page.context().close();
+  });
+  step("S2.9", async ({ browser, ortus }) => {
+    const page = await asTaras(browser, ortus.dataDir);
+    // He started cautiously: DMARC at p=none, so spoofed mail still lands.
+    ortus.dns.publish("_dmarc.ministry.example", "TXT", [["v=DMARC1; p=none; rua=mailto:dmarc-reports@ministry.example"]]);
+    ortus.dns.publish("mail.ministry.example", "A", ["192.0.2.10"]);
+    await page.goto("/admin/domains");
+    await page.getByRole("button", { name: "Check now" }).click();
+    await expect(page.getByRole("tab", { name: /ministry\.example/ })).toContainText("Needs 1 fix");
+
+    // Two weeks of reports from a large provider: only our servers send as us.
+    const now = Math.floor(Date.now() / 1000);
+    for (let day = 14; day >= 1; day--) {
+      const end = now - (day - 1) * 86400;
+      const xml = `<?xml version="1.0"?><feedback><report_metadata><org_name>google.com</org_name><report_id>s29-${day}</report_id><date_range><begin>${end - 86400}</begin><end>${end}</end></date_range></report_metadata><policy_published><domain>ministry.example</domain><p>none</p></policy_published><record><row><source_ip>192.0.2.10</source_ip><count>${1200 + day}</count><policy_evaluated><disposition>none</disposition><dkim>pass</dkim><spf>pass</spf></policy_evaluated></row><identifiers><header_from>ministry.example</header_from></identifiers></record></feedback>`;
+      const attachment = gzipSync(Buffer.from(xml)).toString("base64").replace(/.{76}/g, "$&\n");
+      const message = `From: noreply-dmarc-support@google.com\nTo: dmarc-reports@ministry.example\nSubject: Report domain: ministry.example\nMessage-ID: <s29-${day}@google.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary="b"\n\n--b\nContent-Type: application/gzip; name="google.com!ministry.example!${day}.xml.gz"\nContent-Disposition: attachment\nContent-Transfer-Encoding: base64\n\n${attachment}\n--b--\n`;
+      expect(await deliver(ortus.smtpPort, "noreply-dmarc-support@google.com", "dmarc-reports@ministry.example", message)).toMatch(/^250/);
+    }
+    await page.goto("/admin/deliverability");
+    const senders = page.getByRole("region", { name: "Who sends as ministry.example" });
+    await expect(senders.getByRole("listitem")).toHaveCount(1);
+    await expect(senders.getByRole("listitem")).toContainText("Our servers");
+    await expect(senders.getByRole("listitem")).toContainText("Pass");
+
+    // Clean: he switches DMARC to quarantine, and the domain is verified.
+    await page.goto("/admin/domains");
+    await expect(page.getByRole("note")).toContainText("p=none");
+    const dmarc = await (await page.request.get("/api/v1/mail/admin/domains/ministry.example")).json();
+    const value = dmarc.records.find((r: { purpose: string }) => r.purpose === "dmarc").value;
+    expect(value).toContain("p=quarantine");
+    ortus.dns.publish("_dmarc.ministry.example", "TXT", [[value]]);
+    await page.getByRole("button", { name: "Check now" }).click();
+    await expect(page.getByRole("tab", { name: /ministry\.example/ })).toContainText("Verified");
+    await expect(page.getByRole("note")).toHaveCount(0);
     await page.context().close();
   });
 });
