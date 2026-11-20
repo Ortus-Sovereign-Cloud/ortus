@@ -98,10 +98,17 @@ story("Story 1 and 3 · Chat", () => {
     await iryna.screenshot({ path: "test-results/s3.8-chat.png" });
 
     // Marek invites her to her first meeting; she accepts it in Calendar.
-    const start = Date.now() + 60 * 60 * 1000;
+    // The next working day at 10:00 UTC (the week view shows Monday to
+    // Friday).
+    const day = new Date();
+    day.setUTCHours(10, 0, 0, 0);
+    do day.setUTCDate(day.getUTCDate() + 1);
+    while (day.getUTCDay() === 0 || day.getUTCDay() === 6);
+    const start = day.getTime();
     const event = await people.Marek!.request.post("/api/v1/calendar/events", { headers, data: { summary: "Logistics stand-up", start, end: start + 30 * 60 * 1000, attendees: ["iryna@ministry.example"] } });
     expect(event.ok(), await event.text()).toBeTruthy();
-    await iryna.goto("/calendar");
+    // The week of the meeting.
+    await iryna.goto(`/calendar?date=${start}`);
     const calendar = iryna.locator("ortus-calendar-week");
     await calendar.getByRole("button", { name: /Logistics stand-up/ }).first().click();
     const viewer = calendar.getByRole("dialog", { name: "Logistics stand-up" });

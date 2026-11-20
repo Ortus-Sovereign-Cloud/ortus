@@ -11,6 +11,12 @@
 //       retention on the Sovereignty screen; each change is audited.
 // S2.9  After two clean weeks of DMARC reports (our servers pass), Taras
 //       switches DMARC from p=none to quarantine and the domain is verified.
+// S2.10 Taras runs a restore test (a restore point restored whole into a
+//       scratch installation and checked) and connects the case-management
+//       system: a webhook for filed records and finished approvals, signed,
+//       whose test post the system takes.
+import { createHmac } from "node:crypto";
+import { createServer } from "node:http";
 import { join } from "node:path";
 import type { BrowserContext, Page } from "@playwright/test";
 import { gzipSync } from "node:zlib";
@@ -210,5 +216,63 @@ story("Story 2", () => {
     await expect(page.getByRole("tab", { name: /ministry\.example/ })).toContainText("Verified");
     await expect(page.getByRole("note")).toHaveCount(0);
     await page.context().close();
+  });
+  step("S2.10", async ({ browser, ortus }) => {
+    // A restore test restores the whole installation: give it time.
+    test.setTimeout(240_000);
+    // The case-management system: takes signed posts and keeps them.
+    const got: { headers: Record<string, string | string[] | undefined>; body: string }[] = [];
+    const cases = createServer((req, res) => {
+      let body = "";
+      req.on("data", (c: Buffer) => (body += c.toString("utf8")));
+      req.on("end", () => {
+        got.push({ headers: req.headers, body });
+        res.writeHead(204).end();
+      });
+    });
+    await new Promise<void>((done) => cases.listen(0, "127.0.0.1", done));
+    const port = (cases.address() as { port: number }).port;
+    try {
+      const page = await asTaras(browser, ortus.dataDir);
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.goto("/admin/backup");
+      const screen = page.locator("ortus-admin-backup");
+      await expect(screen.getByRole("heading", { level: 1 })).toHaveText("Backup, restore & integrations");
+      const restore = screen.getByRole("region", { name: "Restore" });
+      // The hourly point may not have come yet on a fresh installation.
+      const take = restore.getByRole("button", { name: "Take one now" });
+      if (await take.isVisible()) await take.click();
+      await expect(restore.getByText("Hourly for 48 hours · daily for 30 days · weekly for a year")).toBeVisible();
+      // The restore test: the newest point restored whole and checked.
+      await restore.getByRole("button", { name: "Test a restore now" }).click();
+      await expect(restore.getByText(/^Last restore test: .* · full site recovery in /)).toBeVisible({ timeout: 120_000 });
+
+      // The case-management system: a webhook for filed records and approvals.
+      const integrations = screen.getByRole("region", { name: "Integrations" });
+      await integrations.getByRole("button", { name: "Add a webhook" }).click();
+      await integrations.getByLabel("Name").fill("Case management system");
+      await integrations.getByLabel("Address it posts to").fill(`http://127.0.0.1:${port}/hook`);
+      await integrations.getByRole("checkbox", { name: "record.filed" }).check();
+      await integrations.getByRole("checkbox", { name: "approval.done" }).check();
+      await integrations.getByRole("button", { name: "Add", exact: true }).click();
+      const secret = (await integrations.getByRole("status").locator("code").textContent()) ?? "";
+      expect(secret).toMatch(/^[0-9a-f]{48}$/);
+      const row = integrations.getByRole("listitem").filter({ hasText: "Case management system" });
+      await expect(row).toContainText("Webhooks: approval.done, record.filed");
+      await row.getByRole("button", { name: "Test" }).click();
+      await expect(row).toContainText("Connected");
+      // The system checks the post really came from this installation.
+      const ping = got.at(-1)!;
+      expect(ping.headers["x-ortus-event"]).toBe("ping");
+      const signature = createHmac("sha256", secret).update(`${ping.headers["x-ortus-timestamp"]}.${ping.body}`).digest("hex");
+      expect(ping.headers["x-ortus-signature"]).toBe(`sha256=${signature}`);
+      // Both changes are in the audit log.
+      const audit = await (await page.request.get("/api/v1/admin/audit?action=webhooks.added")).json();
+      expect(audit.events.length).toBe(1);
+      await page.screenshot({ path: "test-results/s2.10-backup.png" });
+      await page.context().close();
+    } finally {
+      cases.close();
+    }
   });
 });

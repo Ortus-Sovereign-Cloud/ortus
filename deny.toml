@@ -7,7 +7,11 @@
 all-features = true
 
 [advisories]
-ignore = []
+ignore = [
+    # smallstr is unmaintained (no known vulnerability); it comes only with
+    # yrs, which ortus-docs uses to check commenters' document updates.
+    { id = "RUSTSEC-2026-0215", reason = "unmaintained, no vulnerability; only through yrs" },
+]
 
 [licenses]
 allow = [

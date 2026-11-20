@@ -190,15 +190,50 @@ Done when twelve people are in a call on the one-machine install and S1.1 to S1.
 | Task | State | Commits | Notes |
 | --- | --- | --- | --- |
 | 9.0 Calls store and signalling: a call per chat room (a channel's call), join and leave, who is in it, raised hands, live by the chat stream; the call noted in the room; switch, both shapes | Done | ortus-core 4b0659f; ortus-chat cefc3d1; ortus-calls f00309a | Rooms through the core's Chat interface (room, notice); a call per room, sessions with muted, camera, screen, raised hand; heartbeat every 10 s, a sweep ends silent sessions, empty calls and calls on gone media nodes; the room gets an ortus.call notice; both shapes |
-| 9.1 Media server: WebRTC (str0m, sans-IO) on one UDP port per media node, offers and answers over the API, each person's audio and video forwarded to the others, ICE over TCP on the same port for networks that block UDP (the relay); the media role | | | |
-| 9.2 Web call screen (WebCall): tiles with who speaks, mute, camera, screen share, raise hand, leave, joining from the channel; six languages; matches its board | | | |
-| 9.3 The call's shared document: a document presented in the call (who presents, who edits), tables in the Docs editor for the shelter sheet; live notes and action items (a thread of the call, tasks) | | | |
-| 9.4 Twelve in a call: twelve browsers with fake media on the one-machine install in CI, media flowing to all | | | |
-| 9.5 Catch-up card on the home page (Main): mails waiting for a reply, invitations, alerts; S1.2 | | | |
-| 9.6 Notification centre (WebNotifications): alerts from apps (a gauge alert into a channel), the bell, opening where it came from; S1.3 | | | |
-| 9.7 Stories S1.2, S1.3 and S1.6 in the browser, both shapes; Gate C | | | |
-| 9.8 Slice review by a separate reviewer | | | |
+| 9.1 Media server: WebRTC (str0m, sans-IO) on one UDP port per media node, offers and answers over the API, each person's audio and video forwarded to the others, ICE over TCP on the same port for networks that block UDP (the relay); the media role | Done | ortus-calls f00309a, 3255718, 3fd6143 | The media role's node: str0m on one UDP port (ORTUS_MEDIA_LISTEN), registered in calls_nodes with a sealed token; web nodes hand offers over its internal signalling port (the same path on one machine); tracks forwarded within a call; renegotiation over the data channel in 16 KB parts with resend; ICE over TCP on the same port (browser test with UDP refused); the loop drains forwarding and network each round and polls a client after each packet it takes |
+| 9.2 Web call screen (WebCall): tiles with who speaks, mute, camera, screen share, raise hand, leave, joining from the channel; six languages; matches its board | Done | ortus-calls bb5594b, 01cf852; ortus-chat adc2f52 | Tiles with video or initials, speaking ring from the audio level, muted, raised hand; the stage shows a shared screen or a presented document; Mute, Camera, Share screen (screen or document), Raise hand, Leave; Call / Join the call (n) in the channel header; six languages; board layout matched at 1440x900. Left out (DECISIONS): recording, phone dial-in, end-to-end calls |
+| 9.3 The call's shared document: a document presented in the call (who presents, who edits), tables in the Docs editor for the shelter sheet; live notes and action items (a thread of the call, tasks) | Done | ortus-calls 01cf852; ortus-docs 36024eb; ortus-tasks 769ff84 | A session presents a Docs document: the stage loads Docs' editor embedded and everyone with access edits it live (tables were already in the editor); live notes per call; action items become tasks through the new Tasks service (the creator's Action items project) and the assignee is notified |
+| 9.4 Twelve in a call: twelve browsers with fake media on the one-machine install in CI, media flowing to all | Done | ortus-calls 3fd6143 | tests/twelve.rs: twelve WebRTC peers (str0m, own UDP sockets) join through the API and the media node as the one-machine install runs it; each receives the other eleven's audio and video within seconds (debug and release). Twelve browser tabs were tried: the CI machine cannot decode 132 video streams, so browsers test two people (DECISIONS) |
+| 9.5 Catch-up card on the home page (Main): mails waiting for a reply, invitations, alerts; S1.2 | Done | ortus-mail a2ff345 | GET /mail/catch-up: since the previous visit (after an hour away), mail from people waiting for a reply, invitations not answered (the calendar says), alerts from the notification centre; the inbox card adds the alert line and the since time; six languages |
+| 9.6 Notification centre (WebNotifications): alerts from apps (a gauge alert into a channel), the bell, opening where it came from; S1.3 | Done | ortus-core 4a4287b; ortus-chat 1de800d; ortus-docs 9543ed5; ortus-tasks 769ff84 | Core notifications (mention, approval, alert, update) with titles as core templates in the reader's language, the bell on the rail and the centre with tabs, unread counts, quiet hours and do not disturb; chat: mentions, and incoming hooks (an alert source posts into a channel; an alert notifies everyone in it); docs: whoever's turn it is in a route; tasks: an assignee |
+| 9.7 Stories S1.2, S1.3 and S1.6 in the browser, both shapes; Gate C | Done | ortus (this commit) | S1.2, S1.3, S1.6 pass on both shapes in the program check; Gate C |
+| 9.8 Slice review by a separate reviewer | Done | core 262e864, calls 1237956, chat aad2106, tasks b1367e5, calendar 78376b6 | Review found 10 confirmed: calls never connected off loopback (fixed: public destination), removed member stayed in call, assignee saw all action items, TCP writes stalled the media loop, TCP slots holdable, blips ended media, two live calls on PostgreSQL, DND cleared quiet hours, alerts evicted approvals, partner could pose as a hook; all fixed with tests. Worth-a-look also fixed: numbered offers, poll/join race, no calls in end-to-end rooms, path check after cleaning, forget covers actions, action cap |
 
-## Slices 10 to 13
+## Slice 10: Notifications, backup and restore, load, security review
+
+Done when S2.10 passes and no high finding is open.
+
+| Task | State | Commits | Notes |
+| --- | --- | --- | --- |
+| 10.0 Restore points: the backup taken on a schedule (hourly for 48 hours, daily for 30 days, weekly for a year), to a local directory or S3, listed with their times; old ones go | Done | core 262e864, c084edd | Points with sealed manifests (name + checksum), blobs by checksum, index tied to its store, lease for take/prune, thinning; tests both engines |
+| 10.1 Restore to a new folder: an administrator (or the person, when self-restore is on) brings back one person's mail folder, drive folder or calendar as it was at a restore point, into a new folder | Done | core 04b466e; mail 214b081; drive 94911d6, 8cc929b; calendar 2cbd0e2, a5b477b | Admin › Backup screen; /backup/choices and /backup/restore (admin, or self when on); mail folder, Drive folder, calendar into a new place; tests both shapes |
+| 10.2 Restore test: a whole restore point restored into a scratch installation and checked (counts, files, keys), timed, and recorded ("full site recovery in 3 h 40 m"); on demand and monthly | Done | core 04b466e, c084edd | Restore test into a scratch installation: rows, files, keys; on demand and monthly as its own job; e2e and S2.10 run a real one |
+| 10.3 Integrations: outgoing webhooks for events (record.filed, approval.done, ...), signed, retried and audited; the Integrations panel (case management, HR directory, eID, archive, SMS gateway) on the AdminBackup board | Done | core 3eb8306, c084edd; docs 132848a | Webhooks from the audit log (HMAC, retries, ping, per-hook caps, compare-and-set cursor), Integrations panel, GET /reference; S2.10 connects one and checks its signature |
+| 10.4 Load test: many people at once on the one-machine install (sign-in, mail, chat, docs, drive, search) with latency and error budgets, in CI at a smaller size | Done | ortus (this commit) | stories/load/load.ts in the program check per shape: 20 people 45 s, budgets p95 read 400 ms / write 1 s, errors < 0.5 %; first run 32 ops/s, 0 errors, worst p95 88 ms |
+| 10.5 Own security review of the whole system: findings fixed, none high left open | Done | core c197de3, c084edd; docs b2e687e, 7dc1527; calendar d7a6304; mail b43ee48; tasks 6f5f713; drive e647755; chat 73a58dd; calls ce5e322 | Separate whole-system reviewer: 3 high, 8 medium, 7 low. All high and medium fixed with tests; lows fixed except those listed. Open (low / worth a look): unmatched paths fall to rws's file server (empty in both shapes), no re-authentication for credential changes, IMAP/stream sessions not re-checked on suspension, federation partner subdomains, NAT64 filtering, approvals PDF from editor JSON, unlimited docs versions, mail DATA in memory, PostgreSQL TLS unverified, restore test only into SQLite |
+| 10.6 Story S2.10 in the browser, both shapes | Done | ortus (this commit) | S2.10 passes on both shapes: restore test, case-management webhook with a verified signature |
+| 10.7 Slice review by a separate reviewer | Done | see 10.0 to 10.3, docs 7dc1527 | Separate reviewer found 8: take/prune race, stale index, unsealed listing, webhook cursor bugs, guard gaps (marks keyed name--hash refused real suggestions; attributes; reused ids; others' marks; other roots), 32 MiB vs JMAP 50 MB, per-account guessing, restore-test scale. All fixed; streaming whole tables noted |
+
+## Slice 11: iOS app
+
+Done when the phone steps of S1 to S3 (S1.9, S2.4, S3.2) pass in the simulator on CI, and the 15 V1 phone boards are built.
+
+| Task | State | Commits | Notes |
+| --- | --- | --- | --- |
+| 11.0 Project and CI: SwiftUI app (iOS 17), project from XcodeGen, GitHub Actions on macOS: build, unit tests, UI tests in the simulator against a real Ortus built on the runner from the program's pins; licence check of Swift packages | | | |
+| 11.1 API client and sign-in: server address, password with one-time code, passkeys (ASAuthorization), session token in the Keychain; MobileWelcome: the phone becomes the person's key (S3.2) | | | |
+| 11.2 Shell: tab bar (Mail, Chat, Calendar, Files, More), six languages, Arabic right to left; MobileMore | | | |
+| 11.3 MobileInbox and MobileThread with RSVP (JMAP) | | | |
+| 11.4 MobileChats and MobileChannel | | | |
+| 11.5 MobileCalendar | | | |
+| 11.6 MobileDrive and MobileShare | | | |
+| 11.7 MobileDoc (read, comment) | | | |
+| 11.8 MobileTasks and MobileApprovals (sign with eID, S1.9) | | | |
+| 11.9 MobileNotifications and MobileSearch | | | |
+| 11.10 MobileAdmin (mailbox import failures, S2.4) | | | |
+| 11.11 Phone steps S1.9, S2.4, S3.2 in the simulator on CI | | | |
+| 11.12 Slice review by a separate reviewer | | | |
+
+## Slices 12 and 13
 
 Not started. Break each into tasks when it begins.

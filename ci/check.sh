@@ -23,5 +23,8 @@ for shape in ${ORTUS_STORY_SHAPES:-one-machine cluster}; do
     continue
   fi
   (cd stories && ORTUS_STORY_SHAPE="$shape" npx playwright test && node tools/coverage.mjs | tail -n 1)
+  # Many people at once, within latency and error budgets (a small size
+  # here; LOAD_PEOPLE and LOAD_SECONDS make it larger).
+  (cd stories && ORTUS_STORY_SHAPE="$shape" node load/load.ts | tail -n 16)
 done
 echo "all checks passed"

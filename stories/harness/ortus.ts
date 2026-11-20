@@ -94,6 +94,8 @@ export async function startOrtus(env: Record<string, string> = {}): Promise<Inst
     // localhost, not 127.0.0.1: passkeys need a host name as their relying party.
     ORTUS_PUBLIC_URL: `http://localhost:${port}`,
     ORTUS_MAIL_HOSTNAME: "mail.ministry.example",
+    // The media node on loopback, on a port of its own.
+    ORTUS_MEDIA_LISTEN: "127.0.0.1:0",
   };
   // The mail role on free ports (25, 587 and 143 need privileges).
   const smtpPort = await freePort();
