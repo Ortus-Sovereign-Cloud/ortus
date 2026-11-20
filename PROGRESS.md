@@ -48,7 +48,9 @@ Boards: AdminFirstRun, AdminUsers, AdminSignIn, WebWelcome, WebPersonal, AppSwit
 | 1.16 Welcome page and personal settings (WebWelcome, WebPersonal) | Done | ortus-core c6710fd | Invitation link page, first-day steps from real state, people from one's groups, app cards; settings: devices, language, text size, motion, name |
 | 1.17 Story tests S2.1 and S2.3; passkey sign-in in the browser (virtual authenticator) | Done | ortus (this commit) | Both shapes; S2.1 creates the owner, saves the kit, adds a passkey, signs out and back in with it, works the checklist; S2.3 connects a test OpenLDAP and syncs people and groups; core pinned to eb066fd |
 | 1.18 First demo deploy at ortus.cc | Done | ortus f87ca40 | Live 2026-11-20: website, open sign-up (codes DKIM-signed as ortus.cc), passkeys; brought forward before 1.10–1.17 (DECISIONS); redeploys after each green ortus CI |
-| 1.19 Slice review by a separate reviewer; Gate A | Next | | |
+| 1.19 Slice review by a separate reviewer; Gate A | Done | ortus-core e65a587 | Gate A passed 2026-11-20 (review below) |
+
+Slice 1 review (separate reviewer, 2026-11-20): no role bypass or direct account takeover; 4 medium and 11 low findings, all fixed in ortus-core e65a587 with tests: open redirect through a tab in `?return=` (server and client now share one check); sign-up resends uncapped and the code's try counter racy (mails counted per address and network, tries taken in one conditional statement); sign-up before the first owner (closed until an owner exists; only an owner ends setup); sign-in tries racy (taken atomically up front); admin edge cases (validate before writing, invited stays invited after a suspension, owners' devices hidden from admins, last owner cannot reset, reset removes outside links, links answered when no mail is configured); suspended accounts' OIDC tokens; linking by email to unverified sign-ups; prefix-matched addresses (now parsed); the directory's kept password; leftovers in the expiry sweep. Gate A: passed.
 
 ## Slices 2 to 13
 
