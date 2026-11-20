@@ -138,17 +138,34 @@ Done when two people edit one document; S1.7 and S1.8 pass.
 
 | Task | State | Commits | Notes |
 | --- | --- | --- | --- |
-| 6.0 Document store: documents as Yjs updates and snapshots (both shapes), names, folders through Drive, labels, versions (named snapshots), access through Drive's shares | | | |
-| 6.1 Sync server: the Yjs sync and awareness protocol over WebSocket (or SSE plus POST where WebSocket is not there), authorised per document, updates merged and compacted (yrs) | | | |
-| 6.2 Editor (WebDocEditor): rich text with headings, lists, tables; presence (who is here, their cursors); six languages | | | |
-| 6.3 Comments: on a range, threads, replies, mentions (assigned to), resolve | | | |
-| 6.4 Suggestions: suggesting mode, insertions and deletions shown, accept and reject one by one | | | |
-| 6.5 Review route (WebReview): send for approval through steps (people in order, due time), approve or send back with a comment, "changed since" the version a reviewer last saw | | | |
-| 6.6 Word and PDF: export DOCX and PDF, import DOCX | | | |
-| 6.7 Docs in Drive and search: documents listed in Drive, opened from it, indexed by their text | | | |
-| 6.8 CI: S1.7 (two people edit, a suggestion accepted) and S1.8 (sent for approval, reviewed) in the browser, both shapes | | | |
+| 6.0 Document store: documents as Yjs updates and snapshots (both shapes), names, folders through Drive, labels, versions (named snapshots), access through Drive's shares | Done | ortus-docs 17f1ac3 | Documents are Drive items (mime application/vnd.ortus.doc): names, folders, labels and sharing are Drive's; the docs store keeps Yjs updates in order, checkpoints (merged state, text, structure), presence, comments, versions and reviews on both shapes |
+| 6.1 Sync server: the Yjs sync and awareness protocol over WebSocket (or SSE plus POST where WebSocket is not there), authorised per document, updates merged and compacted (yrs) | Done | ortus-docs 17f1ac3, e034ea2 | SSE plus POST through the database (works on a cluster): updates in order with numbers, presence, reload when compacted away; editors post checkpoints that fold updates in; no CRDT on the server (smallstr advisory, see DECISIONS) |
+| 6.2 Editor (WebDocEditor): rich text with headings, lists, tables; presence (who is here, their cursors); six languages | Done | ortus-docs e034ea2 | ProseMirror with y-prosemirror: headings, lists, tables (Tab adds a row at the end), bold, italic; who is here and their cursors (CSP-safe); rename; six languages; browser tests |
+| 6.3 Comments: on a range, threads, replies, mentions (assigned to), resolve | Done | ortus-docs e034ea2 | Comments on a selection (a mark in the document), threads, replies, assigned by address, resolve |
+| 6.4 Suggestions: suggesting mode, insertions and deletions shown, accept and reject one by one | Done | ortus-docs e034ea2 | Suggesting mode (forced for commenters): insertions and deletions as marks, typing continues one suggestion, accept and reject one by one, seen live by others |
+| 6.5 Review route (WebReview): send for approval through steps (people in order, due time), approve or send back with a comment, "changed since" the version a reviewer last saw | Done | ortus-docs e034ea2 | Send for approval with steps (reviewer, task, due time); waiting list on the Docs home; review page (WebReview) with your turn, approve or send back with a comment, changed since the earlier version, route |
+| 6.6 Word and PDF: export DOCX and PDF, import DOCX | Done | ortus-docs 117b904 | DOCX export (docx) and import (mammoth), PDF by the browser's print from a clean window; round trip tested in the browser; prosemirror-view XSS fix, npm audit in the check |
+| 6.7 Docs in Drive and search: documents listed in Drive, opened from it, indexed by their text | Done | ortus-docs 7b1593e; ortus-drive 554f43a | Listed in Drive (DOC), opened from it; text indexed at checkpoints; found by whoever Drive lets see it |
+| 6.8 CI: S1.7 (two people edit, a suggestion accepted) and S1.8 (sent for approval, reviewed) in the browser, both shapes | Done | ortus stories/specs/docs.spec.ts | Release program, both shapes: Marek writes and shares, Ana suggests live, Marek accepts; Marek sends for approval, Olena approves by 14:05; found in search |
 | 6.9 Slice review by a separate reviewer | | | |
 
-## Slices 7 to 13
+## Slice 7: Tasks, approvals, signing, records, read-and-confirm
+
+Done when S1.5, S1.9, S1.10 and S3.7 pass and the filed PDF's signature verifies.
+
+| Task | State | Commits | Notes |
+| --- | --- | --- | --- |
+| 7.0 Tasks store and API: projects, tasks (title, notes, assignee, due time, column, checklist, order), both shapes; search; forgetting a person | | | |
+| 7.1 Web tasks (WebTasks): board with four columns and moving cards, list, timeline, my tasks, new and edit task; six languages | | | |
+| 7.2 Signing keys: the organisation's CA and a personal signing certificate per signer (ECDSA P-256, aws-lc-rs), keys sealed with the installation key, issued on first signature, revocable; both shapes | | | |
+| 7.3 PDF of a document version (docs): the structure to PDF with an embedded font (Latin, Cyrillic, Arabic), and the signature boxes | | | |
+| 7.4 PAdES signatures: incremental signatures (CMS detached, signing time), several signers in turn, our own verifier; verified by an independent validator in CI | | | |
+| 7.5 Approval routes with signing (WebApprovals): steps that approve or sign, signing confirmed again by the signer, send back; the Approvals app lists what waits; six languages | | | |
+| 7.6 Records (WebRecordFiled): cases and records filed at the end of a route, never edited or deleted, kept by retention; verify and download; six languages | | | |
+| 7.7 Read and confirm (WebMustRead): a record or document published as must-read to groups; confirming; who confirmed; on the welcome page; six languages | | | |
+| 7.8 CI: S1.5, S1.9 (web stand-in for the phone), S1.10 and S3.7 in the browser, both shapes; the filed PDF verifies | | | |
+| 7.9 Slice review by a separate reviewer | | | |
+
+## Slices 8 to 13
 
 Not started. Break each into tasks when it begins.

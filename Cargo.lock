@@ -2605,7 +2605,13 @@ dependencies = [
 name = "ortus-docs"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "ortus-core",
+ "rust-embed",
+ "rust-web-server",
+ "serde",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]
