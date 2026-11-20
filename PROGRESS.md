@@ -94,11 +94,11 @@ Done when mail goes to and from an outside server in CI, an IMAP app works, and 
 
 ## Slice 4: Calendar and contacts
 
-Done when an invitation makes a round trip with an outside server and a CalDAV app works. The app lives in ortus-calendar; iCalendar and vCard parsing and recurrence use calcard (Stalwart, Apache-2.0 OR MIT); the DAV servers and scheduling are our own.
+Done when an invitation makes a round trip with an outside server and a CalDAV app works. The app lives in ortus-calendar; iCalendar and vCard parsing and recurrence use calcard-next (the maintained fork of Stalwart's calcard, on jiff; Apache-2.0 OR MIT); the DAV servers and scheduling are our own.
 
 | Task | State | Commit | Notes |
 | --- | --- | --- | --- |
-| 4.0 Calendar store: calendars per person, events kept as iCalendar (UID, recurrence, exceptions, attendees, alarms), ETags and sync tokens, expansion of recurring events into a time range; both shapes | | | |
+| 4.0 Calendar store: calendars per person, events kept as iCalendar (UID, recurrence, exceptions, attendees, alarms), ETags and sync tokens, expansion of recurring events into a time range; both shapes | Done | ortus-calendar 69ab781 | calcard-next (jiff) for parsing and recurrence; sync changes per calendar; web client and browser tests in the repo |
 | 4.1 Contacts store: address books per person (vCard), plus the installation's people as a read-only directory; both shapes | | | |
 | 4.2 CalDAV (RFC 4791, 6578): discovery (/.well-known/caldav, principal, home set), PROPFIND, calendar-query and multiget REPORTs, sync-collection, PUT/DELETE with ETags, MKCALENDAR; app passwords; tested with a real CalDAV client | | | |
 | 4.3 CardDAV (RFC 6352): discovery, address books, addressbook-query and multiget, sync, PUT/DELETE; tested with a real client | | | |
