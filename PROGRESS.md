@@ -42,10 +42,10 @@ Boards: AdminFirstRun, AdminUsers, AdminSignIn, WebWelcome, WebPersonal, AppSwit
 | 1.10 OpenID Connect provider (code + PKCE, ES256 ID tokens, discovery, JWKS) | Done | ortus-core 9ccf487 | Admin-registered clients; PKCE S256 always; key made once in DB (stored unencrypted in the database: note for slice 2 key handling) |
 | 1.11 Broker to outside OpenID Connect providers, tested against a test IdP in CI | Done | ortus-core 51a0e50 | RS256/ES256 ID token checks; link by verified email / create accounts per provider; mock-oauth2-server in CI (test only) |
 | 1.12 Broker to outside SAML providers | Done | ortus-core 82c019f | Narrow SP-initiated SAML (DECISIONS); bergshamra-c14n; real IdP fixture + 8 attack mutations + live SimpleSAMLphp test; also fixed: OIDC broker login CSRF (trip cookie) and password-alone confirmation (core 0b947c6) |
-| 1.13 Admin: first run checklist (AdminFirstRun) | Next | | |
-| 1.14 Admin: users and groups, invite, CSV and directory import, quotas (AdminUsers) | | | |
-| 1.15 Admin: sign-in policy and devices (AdminSignIn) | | | |
-| 1.16 Welcome page and personal settings (WebWelcome, WebPersonal) | | | |
+| 1.13 Admin: first run checklist (AdminFirstRun) | Done | ortus-core db485b0 | Six steps from real state (recovery kit, HTTPS address, people, sign-in policy, data place confirmed, backup checked by `ortus check-backup`); installation facts without secrets; second-owner nudge |
+| 1.14 Admin: users and groups, invite, CSV and directory import, quotas (AdminUsers) | Done | ortus-core 840055d, c69173e | Invitations by mail (7 days, once), CSV import with per-line report, roles (never above one's own, last owner kept), suspend, quotas, reset sign-in, devices; LDAP/AD directory sync tested against a real OpenLDAP (test only) |
+| 1.15 Admin: sign-in policy and devices (AdminSignIn) | Done | ortus-core 5402a86 | Passwords (always with app code) on/off, session idle and maximum days; off is refused while someone depends on a password; board's QR / smart card rows map to passkeys and organisation sign-in (DECISIONS) |
+| 1.16 Welcome page and personal settings (WebWelcome, WebPersonal) | Next | | |
 | 1.17 Story tests S2.1 and S2.3; passkey sign-in in the browser (virtual authenticator) | | | |
 | 1.18 First demo deploy at ortus.cc | Done | ortus f87ca40 | Live 2026-11-20: website, open sign-up (codes DKIM-signed as ortus.cc), passkeys; brought forward before 1.10–1.17 (DECISIONS); redeploys after each green ortus CI |
 | 1.19 Slice review by a separate reviewer; Gate A | | | |
