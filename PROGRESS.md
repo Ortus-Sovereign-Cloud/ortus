@@ -38,10 +38,10 @@ Boards: AdminFirstRun, AdminUsers, AdminSignIn, WebWelcome, WebPersonal, AppSwit
 | 1.6 Demo limits: quotas, no outside mail, account caps, 30-day expiry job, terms and privacy page | Done | ortus-core 75e5136 | caps per day/address; hourly expiry with App::forget_user; quota stored on account (enforced by drive, slice 5); 'no outside mail' is enforced by the mail app (slice 3) |
 | 1.7 Project website at the root (setting), six languages, Sign in link | Done | ortus-core d645651 | [site] website; GET /api/v1/session for visitors |
 | 1.8 After sign-in: app chooser the first time, then the last app used | Done | ortus-core f03c977 | PUT /api/v1/me/place |
-| 1.9 Audit events (base; the hash chain is slice 2) | Next | | |
-| 1.10 OpenID Connect provider (code + PKCE, ES256 ID tokens, discovery, JWKS) | | | |
-| 1.11 Broker to outside OpenID Connect providers, tested against a test IdP in CI | | | |
-| 1.12 Broker to outside SAML providers | | | |
+| 1.9 Audit events (base; the hash chain is slice 2) | Done | ortus-core 9164676 | Hash chain already (head row serialises writers); verify(); admin API list/verify; chain survives backup/restore |
+| 1.10 OpenID Connect provider (code + PKCE, ES256 ID tokens, discovery, JWKS) | Done | ortus-core 9ccf487 | Admin-registered clients; PKCE S256 always; key made once in DB (stored unencrypted in the database: note for slice 2 key handling) |
+| 1.11 Broker to outside OpenID Connect providers, tested against a test IdP in CI | Done | ortus-core 51a0e50 | RS256/ES256 ID token checks; link by verified email / create accounts per provider; mock-oauth2-server in CI (test only) |
+| 1.12 Broker to outside SAML providers | Next | |  |
 | 1.13 Admin: first run checklist (AdminFirstRun) | | | |
 | 1.14 Admin: users and groups, invite, CSV and directory import, quotas (AdminUsers) | | | |
 | 1.15 Admin: sign-in policy and devices (AdminSignIn) | | | |
