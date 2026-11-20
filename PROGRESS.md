@@ -179,10 +179,26 @@ Done when a room is shared with an independent Matrix server in CI and S1.4 and 
 | 8.4 Matrix server identity: signing keys (Ed25519), key server, canonical JSON, event hashing and signing, server discovery, signed requests both ways | Done | ortus-chat 2504c70 | Ed25519 key made once, kept sealed (rotated with the keyring); key list at /_matrix/key/v2/server; canonical JSON, redaction, content hash and reference-hash event ids passing the spec vectors; .well-known delegation then port 8448; X-Matrix signed requests out and checked in (partner first, then key fetch); TLS against public CAs and ORTUS_FEDERATION_CA; every call listed in outside calls; own listener (ORTUS_FEDERATION_LISTEN) only when a certificate is set |
 | 8.5 Matrix rooms over federation: channels as rooms (room version 10), events and authorisation rules, joins and invites both ways, sending and receiving transactions with retries, backfill | Done | ortus-chat 2504c70, 8260a27 | A shared room gets its room-v10 state (create, power levels, join rules, history, name, members); make_join/send_join for partners (channels open, private channels by invitation); invitations to partners countersigned by their server; messages both ways with the same event id; inbound events checked (signature, hash, sender, membership), transactions once per (origin, txn); outbox with back-off retries; event, state, state_ids, backfill, get_missing_events, profile. Scope: Ortus hosts shared rooms (DECISIONS) |
 | 8.6 Federation policy: only the organisations allowed in Sovereignty (with chat), labels that keep a channel inside, audit of what leaves | Done | ortus-chat 2504c70, 8260a27 | Deny by default: no fetch, send or take without a partner allowed chat; the label decides (core policy, audited) at each join, event and send, so a SECRET or relabelled room stops; refusals logged; sharing, partner joins and invitations audited; Share with partners and Invite in the room header, six languages |
-| 8.7 End-to-end rooms by policy: an administrator allows them; their messages are encrypted in the browser and kept out of search, records and legal hold | | | |
-| 8.8 CI: a room shared with an independent Matrix server; S1.4 and S3.8 in the browser, both shapes | | | |
-| 8.9 Slice review by a separate reviewer | | | |
+| 8.7 End-to-end rooms by policy: an administrator allows them; their messages are encrypted in the browser and kept out of search, records and legal hold | Done | ortus-chat 5e62c40, cefc3d1 | Matrix Olm and Megolm in the browser on WebCrypto (the policy forbids WebAssembly), checked in CI against vodozemac (tests/olm_interop.rs); signed device keys, one-time and fallback keys, claims, to-device inbox, Megolm-sealed messages bound to sender, room, thread and index; trust on first use; nothing readable in (people, apps, edits, links), not searched, not shared over federation, holds do not keep them; wire format docs/end-to-end.md. Left: cross-signing and device verification (DECISIONS) |
+| 8.8 CI: a room shared with an independent Matrix server; S1.4 and S3.8 in the browser, both shapes | Done | ortus-chat 2504c70 (ci/matrix-peer.sh); ortus cc86008, this commit | Dendrite in chat CI (required): a partner joins, messages both ways, invitations, a SECRET or relabelled room stays inside, on SQLite and PostgreSQL; S1.4 and S3.8 pass in the program |
+| 8.9 Slice review by a separate reviewer | Done | ortus-chat 5e62c40, cefc3d1 | Two reviews. Fixed: server names checked against Matrix grammar and private addresses refused at resolution; partners send only messages and leave; depth, size and time limits; redactions and edits out, and kept copies redacted with search rows on delete, retention and forgetting; 50-event transactions, the label checked at each send; invitations as events; the end-to-end rework to Olm and Megolm with sender binding, curve-key uniqueness, replay and thread checks, fallback keys, claim limits, the cross-tab lock and rotation on join. Noted, not fixed: partner redactions not taken; core domain_of accepts some odd names (chat checks first); chat_reads delete and insert in send can collide on PostgreSQL under load |
 
-## Slices 9 to 13
+## Slice 9: Calls (Gate C)
+
+Done when twelve people are in a call on the one-machine install and S1.1 to S1.10 pass in the browser (S1.1 is V2).
+
+| Task | State | Commits | Notes |
+| --- | --- | --- | --- |
+| 9.0 Calls store and signalling: a call per chat room (a channel's call), join and leave, who is in it, raised hands, live by the chat stream; the call noted in the room; switch, both shapes | Done | ortus-core 4b0659f; ortus-chat cefc3d1; ortus-calls f00309a | Rooms through the core's Chat interface (room, notice); a call per room, sessions with muted, camera, screen, raised hand; heartbeat every 10 s, a sweep ends silent sessions, empty calls and calls on gone media nodes; the room gets an ortus.call notice; both shapes |
+| 9.1 Media server: WebRTC (str0m, sans-IO) on one UDP port per media node, offers and answers over the API, each person's audio and video forwarded to the others, ICE over TCP on the same port for networks that block UDP (the relay); the media role | | | |
+| 9.2 Web call screen (WebCall): tiles with who speaks, mute, camera, screen share, raise hand, leave, joining from the channel; six languages; matches its board | | | |
+| 9.3 The call's shared document: a document presented in the call (who presents, who edits), tables in the Docs editor for the shelter sheet; live notes and action items (a thread of the call, tasks) | | | |
+| 9.4 Twelve in a call: twelve browsers with fake media on the one-machine install in CI, media flowing to all | | | |
+| 9.5 Catch-up card on the home page (Main): mails waiting for a reply, invitations, alerts; S1.2 | | | |
+| 9.6 Notification centre (WebNotifications): alerts from apps (a gauge alert into a channel), the bell, opening where it came from; S1.3 | | | |
+| 9.7 Stories S1.2, S1.3 and S1.6 in the browser, both shapes; Gate C | | | |
+| 9.8 Slice review by a separate reviewer | | | |
+
+## Slices 10 to 13
 
 Not started. Break each into tasks when it begins.
