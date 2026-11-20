@@ -89,6 +89,9 @@ story("Story 1 · Approvals and records", () => {
       const r = await marek.request.post(`/api/v1/drive/items/${doc}/shares`, { headers, data: { email, role } });
       expect(r.ok(), await r.text()).toBeTruthy();
     }
+    // The team's channel, told when the plan is filed.
+    const channel = await marek.request.post("/api/v1/chat/rooms", { headers, data: { kind: "channel", name: "flood-response" } });
+    expect(channel.ok(), await channel.text()).toBeTruthy();
     const editor = marek.locator("ortus-docs-editor");
     await editor.getByRole("button", { name: "Send for approval" }).click();
     const send = editor.getByRole("dialog", { name: "Send for approval" });
@@ -104,6 +107,7 @@ story("Story 1 · Approvals and records", () => {
       await send.getByLabel(`Reviewer ${i + 1} approves or signs`).selectOption(kind);
     }
     await send.getByLabel("Case (the signed PDF is filed there)").fill("2026/EM/0114");
+    await send.getByLabel("Tell a chat channel when it is filed").fill("#flood-response");
     await send.getByRole("button", { name: "Send", exact: true }).click();
     await expect(send).toBeHidden();
 
@@ -137,8 +141,13 @@ story("Story 1 · Approvals and records", () => {
     await expect(facts).toContainText("0114-001");
     await expect(facts).toContainText("2 of 2 valid");
     await expect(facts).toContainText("10 years");
+    await expect(page.getByRole("region", { name: "What happened next" })).toContainText("Posted to #flood-response");
     await expect(page.locator(".seal")).toHaveText("Signed and sealed");
     await marek.screenshot({ path: "test-results/s1.10-record.png" });
+
+    // The channel was told.
+    await marek.goto("/chat");
+    await expect(marek.locator("ortus-chat-main").getByRole("region", { name: "Messages" })).toContainText("is signed and filed as record 0114-001");
 
     // The filed PDF's signatures, checked by an independent validator.
     const id = new URL(record, "http://x").searchParams.get("record");
