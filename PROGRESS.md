@@ -52,6 +52,22 @@ Boards: AdminFirstRun, AdminUsers, AdminSignIn, WebWelcome, WebPersonal, AppSwit
 
 Slice 1 review (separate reviewer, 2026-11-20): no role bypass or direct account takeover; 4 medium and 11 low findings, all fixed in ortus-core e65a587 with tests: open redirect through a tab in `?return=` (server and client now share one check); sign-up resends uncapped and the code's try counter racy (mails counted per address and network, tries taken in one conditional statement); sign-up before the first owner (closed until an owner exists; only an owner ends setup); sign-in tries racy (taken atomically up front); admin edge cases (validate before writing, invited stays invited after a suspension, owners' devices hidden from admins, last owner cannot reset, reset removes outside links, links answered when no mail is configured); suspended accounts' OIDC tokens; linking by email to unverified sign-ups; prefix-matched addresses (now parsed); the directory's kept password; leftovers in the expiry sweep. Gate A: passed.
 
-## Slices 2 to 13
+## Slice 2: Policy and audit
+
+Done when a label blocks a forbidden share and the attempt is in the audit log; S2.8 passes.
+
+| Task | State | Commit | Notes |
+| --- | --- | --- | --- |
+| 2.1 Classification labels: ordered labels with rules (outside sharing, links, federation, phones, forwarding, watermark); defaults PUBLIC, INTERNAL, OFFICIAL-SENSITIVE, SECRET; owner edits them | Done | ortus-core b466d00 | Four default labels; owner edits; unknown label = strictest |
+| 2.2 One policy function: `policy::decide(action, actor, label, audience)` answers allow, deny or allow-with-reason; every deny and every overridden warning goes to the audit log; apps reach it through `Services` | Done | ortus-core b466d00 | decide/judge; refusals and reasoned overrides audited; `/policy/check` for clients |
+| 2.3 Federation allow-list: partner organisations by domain, with what they may do (mail, chat, full); used by the policy function | Done | ortus-core b466d00 | Partners by domain (subdomains included) and channel |
+| 2.4 Retention per kind (mail, chat, recordings, files, deleted items) and legal hold (people or channels, with a case reference); apps ask `policy::keep_until` and `policy::on_hold`; a sweep job interface | Done | ortus-core ab41deb | Periods per kind, holds on people and channels, `App::purge` daily sweep, held people's accounts kept |
+| 2.5 Secrets at rest: a master key (file or environment) encrypts stored secrets (OIDC signing key, provider and directory passwords) with AES-256-GCM; `ortus rotate-keys`; key facts for the screen | Done | ortus-core 088a1ba, ortus-deploy 76d3f99 | OIDC key, provider/directory passwords, TOTP sealed; key file or env; rotate-keys; restore names the key; chart keeps one key for all pods |
+| 2.6 Data location facts and the outbound-calls check (nothing reaches a third-party cloud unless configured) | Done | ortus-core f054037 | Every outbound call noted with purpose; unconfigured hosts flagged; compliance report with audit verified |
+| 2.7 Admin › Sovereignty & compliance screen (AdminSovereignty) and the compliance report export | Done | ortus-core 2ae80d3 | Matches the board; owner edits partners, labels, periods, holds; report download |
+| 2.8 Story test S2.8; the slice's done-when test (a label blocks a share, the attempt is audited) in Rust and the browser | Done | ortus (this commit), ortus-core b466d00 | S2.8 in both shapes (partner, retention, audit checked); done-when in Rust on both engines (SECRET share refused and audited); its browser half comes with Drive's share dialog (5.x) |
+| 2.9 Slice review by a separate reviewer | Next | | |
+
+## Slices 3 to 13
 
 Not started. Break each into tasks when it begins.

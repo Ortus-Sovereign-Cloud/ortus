@@ -5,6 +5,8 @@
 //       passkey, signs out and back in with it, confirms where data lives.
 // S2.3  Taras connects the HR directory and imports users and groups
 //       (a test OpenLDAP, ORTUS_TEST_LDAP; CI requires it).
+// S2.8  Taras sets data location, keys, federation partners and
+//       retention on the Sovereignty screen; each change is audited.
 import { join } from "node:path";
 import type { BrowserContext, Page } from "@playwright/test";
 import { expect, step, story, test } from "../harness/story.ts";
@@ -97,6 +99,38 @@ story("Story 2", () => {
     await page.goto("/admin");
     await expect(checklistStep(page, "Bring in your people").getByText("Done", { exact: true })).toBeVisible();
     await expect(page.getByText("3 of 6 done")).toBeVisible();
+    await page.context().close();
+  });
+
+  step("S2.8", async ({ browser, ortus }) => {
+    const page = await asTaras(browser, ortus.dataDir);
+    await page.goto("/admin/sovereignty");
+    await expect(page.getByRole("heading", { level: 1, name: "Sovereignty & compliance" })).toBeVisible();
+    // Data location and keys: where things are, said plainly.
+    await expect(page.getByRole("region", { name: "Data location" })).toContainText(ortus.shape === "cluster" ? "PostgreSQL" : "SQLite");
+    await expect(page.getByRole("region", { name: "Data location" })).toContainText("No calls to third-party clouds");
+    await expect(page.getByRole("region", { name: "Encryption keys" })).toContainText("AES-256-GCM");
+
+    // Federation: the health ministry may exchange mail and chat.
+    await page.getByRole("button", { name: "+ Allow an organisation" }).click();
+    await page.getByLabel("Domain").fill("health.example.gov");
+    await page.getByLabel("Name", { exact: true }).fill("Ministry of Health");
+    await page.getByRole("checkbox", { name: "Chat" }).check();
+    await page.getByRole("button", { name: "Allow", exact: true }).click();
+    await expect(page.getByRole("region", { name: "Federation" })).toContainText("health.example.gov");
+
+    // Retention: chat kept seven years, recordings one.
+    await page.getByLabel("Chat messages").selectOption("2555");
+    await expect(page.getByRole("status")).toHaveText("Saved.");
+    await page.getByLabel("Call recordings").selectOption("365");
+
+    // Every change is in the audit log, and the chain holds.
+    const audit = await (await page.request.get("/api/v1/admin/audit?action=policy.partner_added")).json();
+    expect(audit.events[0].detail).toContain("health.example.gov");
+    const retention = await (await page.request.get("/api/v1/admin/audit?action=retention.changed")).json();
+    expect(retention.events.length).toBeGreaterThanOrEqual(1);
+    await page.getByRole("button", { name: "Check now" }).click();
+    await expect(page.getByText(/last check .* OK/)).toBeVisible();
     await page.context().close();
   });
 });
