@@ -31,24 +31,33 @@ export function findStep(id: string): Step {
   return found;
 }
 
-/** One installation for every step of a story file. */
-export const test = base.extend<{ ortus: Installation }, { installation: Installation }>({
-  installation: [
+/**
+ * One installation for every step of a story file: fresh for each file,
+ * even when one worker runs several files.
+ */
+export const test = base.extend<{ ortus: Installation }, { installations: Map<string, Promise<Installation>> }>({
+  installations: [
     // eslint-disable-next-line no-empty-pattern
     async ({}, use) => {
-      const installation = await startOrtus();
-      await use(installation);
-      await installation.stop();
+      const all = new Map<string, Promise<Installation>>();
+      await use(all);
+      for (const one of all.values()) await (await one).stop();
     },
     { scope: "worker" },
   ],
-  ortus: async ({ installation }, use, info) => {
+  ortus: async ({ installations }, use, info) => {
+    let started = installations.get(info.file);
+    if (!started) {
+      started = startOrtus();
+      installations.set(info.file, started);
+    }
+    const installation = await started;
     await use(installation);
     if (info.status !== info.expectedStatus) {
       await info.attach("ortus.log", { body: installation.log.join(""), contentType: "text/plain" });
     }
   },
-  baseURL: async ({ installation }, use) => use(installation.url),
+  baseURL: async ({ ortus }, use) => use(ortus.url),
 });
 
 export { expect };
