@@ -474,6 +474,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c9ea0ac24bc397ab3c98583a3c9ba74fa56b09a4449bbe172b9b1ddb016027a"
 
 [[package]]
+name = "cms"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b77c319abfd5219629c45c34c89ba945ed3c5e49fcde9d16b6c3885f118a730"
+dependencies = [
+ "const-oid 0.9.6",
+ "der",
+ "spki",
+ "x509-cert",
+]
+
+[[package]]
 name = "color_quant"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -688,6 +700,7 @@ dependencies = [
  "const-oid 0.9.6",
  "der_derive",
  "flagset",
+ "pem-rfc7468",
  "zeroize",
 ]
 
@@ -2592,7 +2605,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha1 0.10.7",
- "sha2",
+ "sha2 0.11.1",
  "tokio",
  "tokio-postgres",
  "tokio-postgres-rustls",
@@ -2606,7 +2619,9 @@ name = "ortus-docs"
 version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
+ "miniz_oxide 0.8.9",
  "ortus-core",
+ "pdf-writer",
  "rust-embed",
  "rust-web-server",
  "serde",
@@ -2685,7 +2700,19 @@ dependencies = [
 name = "ortus-tasks"
 version = "0.1.0"
 dependencies = [
+ "aws-lc-rs",
+ "base64 0.22.1",
+ "cms",
+ "der",
  "ortus-core",
+ "rust-embed",
+ "rust-web-server",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "spki",
+ "tokio",
+ "x509-cert",
 ]
 
 [[package]]
@@ -2729,6 +2756,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "pdf-writer"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5df03c7d216de06f93f398ef06f1385a60f2c597bb96f8195c8d98e08a26b1d5"
+dependencies = [
+ "bitflags",
+ "itoa",
+ "memchr",
+ "ryu",
+]
+
+[[package]]
 name = "pem"
 version = "3.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2746,6 +2785,15 @@ checksum = "d354a98a3d1251555de99e8fdd8afda05573c31b82f59063a7b0a29b5527f120"
 dependencies = [
  "base64 0.23.1",
  "serde_core",
+]
+
+[[package]]
+name = "pem-rfc7468"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "88b39c9bfcfc231068454382784bb460aae594343fb030d46e9f50a645418412"
+dependencies = [
+ "base64ct",
 ]
 
 [[package]]
@@ -2900,7 +2948,7 @@ dependencies = [
  "md-5",
  "memchr",
  "rand",
- "sha2",
+ "sha2 0.11.1",
  "stringprep",
 ]
 
@@ -3214,7 +3262,7 @@ dependencies = [
  "log",
  "percent-encoding",
  "sha1 0.11.0",
- "sha2",
+ "sha2 0.11.1",
  "windows-sys 0.61.2",
 ]
 
@@ -3351,7 +3399,7 @@ version = "8.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "915e33dccbe7deb2b8a342dc4c517503fe85e0230ddbae40a4fb0220493dad9b"
 dependencies = [
- "sha2",
+ "sha2 0.11.1",
  "walkdir",
 ]
 
@@ -3857,6 +3905,17 @@ dependencies = [
  "cfg-if",
  "cpufeatures 0.3.1",
  "digest 0.11.3",
+]
+
+[[package]]
+name = "sha2"
+version = "0.10.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a7507d819769d01a365ab707794a4084392c824f54a7a6a7862f8c3d0892b283"
+dependencies = [
+ "cfg-if",
+ "cpufeatures 0.2.17",
+ "digest 0.10.7",
 ]
 
 [[package]]

@@ -52,6 +52,9 @@ jobs:
       ORTUS_REQUIRE_S3: "1"
       ORTUS_REQUIRE_LDAP: "1"
       ORTUS_REQUIRE_OUTSIDE: "1"
+      # An independent PAdES validator checks the filed PDF's signatures.
+      ORTUS_REQUIRE_PYHANKO: "1"
+      ORTUS_TEST_PYHANKO: /tmp/pyhanko/bin/pyhanko
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -85,6 +88,8 @@ jobs:
         run: |
           out="$(.deps/ortus-mail/ci/outside-mail.sh "$RUNNER_TEMP/outside-maildir")"
           echo "${out#export }" >> "$GITHUB_ENV"
+      - name: The PDF signature validator (pyHanko, MIT)
+        run: python3 -m venv /tmp/pyhanko && /tmp/pyhanko/bin/pip install -q "pyhanko==0.25.3"
       - run: ci/check.sh
       - uses: actions/upload-artifact@v4
         if: failure()

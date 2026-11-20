@@ -16,6 +16,7 @@ fn the_program_has_its_apps() {
         "calls",
         "tasks",
         "approvals",
+        "records",
     ];
     expected.sort_unstable();
     assert_eq!(expected.to_vec(), ids);
