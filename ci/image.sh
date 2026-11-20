@@ -10,12 +10,6 @@ tag="${2:-$program:dev}"
 ci/fetch.sh >/dev/null
 stage="$(mktemp -d)"
 trap 'rm -rf "$stage"' EXIT
-skip=(--exclude target --exclude .git --exclude node_modules --exclude test-results)
-rsync -a "${skip[@]}" --exclude .deps ./ "$stage/"
-mkdir -p "$stage/.deps"
-for dep in .deps/*/; do
-  name="$(basename "$dep")"
-  rsync -aL "${skip[@]}" "$dep" "$stage/.deps/$name/"
-done
+ci/stage.sh "$stage"
 docker build -q --build-arg "PROGRAM=$program" -t "$tag" "$stage" >/dev/null
 echo "image: $tag ($program)"

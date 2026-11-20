@@ -12,6 +12,18 @@ cargo deny check
 ci/licence-gate-selftest.sh
 cargo build --release
 ci/install-test.sh
+# What the release publishes beside the programs, made from them and kept
+# in the repository (the website takes the reference from here): the API
+# reference, the commands, the licences. ORTUS_UPDATE_REFERENCE=1 rewrites.
+mkdir -p api
+target/release/ortus reference > target/openapi.json
+target/release/ortus help | sed -n 's/^  \([a-z][a-z-]*\).*/\1/p' | sort -u > target/commands.txt
+python3 tools/licences.py > target/LICENSES.md
+for f in api/openapi.json api/commands.txt LICENSES.md; do
+  made="target/$(basename "$f")"
+  if [ -n "${ORTUS_UPDATE_REFERENCE:-}" ]; then cp "$made" "$f"; fi
+  cmp -s "$made" "$f" || { echo "check: $f is stale: run ORTUS_UPDATE_REFERENCE=1 ci/check.sh and commit it" >&2; exit 1; }
+done
 # The story steps, in the browser, against the release program, in each
 # shape: one-machine (SQLite and a directory) and cluster (PostgreSQL and
 # S3, which need ORTUS_TEST_POSTGRES and ORTUS_TEST_S3_*).

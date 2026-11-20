@@ -220,20 +220,49 @@ Done when the phone steps of S1 to S3 (S1.9, S2.4, S3.2) pass in the simulator o
 
 | Task | State | Commits | Notes |
 | --- | --- | --- | --- |
-| 11.0 Project and CI: SwiftUI app (iOS 17), project from XcodeGen, GitHub Actions on macOS: build, unit tests, UI tests in the simulator against a real Ortus built on the runner from the program's pins; licence check of Swift packages | | | |
-| 11.1 API client and sign-in: server address, password with one-time code, passkeys (ASAuthorization), session token in the Keychain; MobileWelcome: the phone becomes the person's key (S3.2) | | | |
-| 11.2 Shell: tab bar (Mail, Chat, Calendar, Files, More), six languages, Arabic right to left; MobileMore | | | |
-| 11.3 MobileInbox and MobileThread with RSVP (JMAP) | | | |
-| 11.4 MobileChats and MobileChannel | | | |
-| 11.5 MobileCalendar | | | |
-| 11.6 MobileDrive and MobileShare | | | |
-| 11.7 MobileDoc (read, comment) | | | |
-| 11.8 MobileTasks and MobileApprovals (sign with eID, S1.9) | | | |
-| 11.9 MobileNotifications and MobileSearch | | | |
-| 11.10 MobileAdmin (mailbox import failures, S2.4) | | | |
+| 11.0 Project and CI: SwiftUI app (iOS 17), project from XcodeGen, GitHub Actions on macOS: build, unit tests, UI tests in the simulator against a real Ortus built on the runner from the program's pins; licence check of Swift packages | In progress | ortus-ios e0343b7, cb7e787 | OrtusKit tested on Linux (CI green); macOS job builds Ortus from the program pins and runs XCUITests |
+| 11.1 API client and sign-in: server address, password with one-time code, passkeys (ASAuthorization), session token in the Keychain; MobileWelcome: the phone becomes the person's key (S3.2) | In progress | ortus-ios e0343b7 | Join with the invitation code; the phone passkey (Secure Enclave, software key on the simulator) registers and signs in through /me/passkeys and /session/passkey; checked against a real Ortus with the same bytes from Python |
+| 11.2 Shell: tab bar (Mail, Chat, Calendar, Files, More), six languages, Arabic right to left; MobileMore | In progress | ortus-ios e0343b7..e9900d8 | Built; waiting for the simulator run on CI: tab bar, More, six languages |
+| 11.3 MobileInbox and MobileThread with RSVP (JMAP) | In progress | ortus-ios e0343b7..e9900d8 | Built; waiting for the simulator run on CI: InboxView, ThreadView, OrtusKit Mail (JMAP) |
+| 11.4 MobileChats and MobileChannel | In progress | ortus-ios e0343b7..e9900d8 | Built; waiting for the simulator run on CI: ChatsView, ChannelView |
+| 11.5 MobileCalendar | In progress | ortus-ios e0343b7..e9900d8 | Built; waiting for the simulator run on CI: CalendarView |
+| 11.6 MobileDrive and MobileShare | In progress | ortus-ios e0343b7..e9900d8 | Built; waiting for the simulator run on CI: DriveView, ShareView |
+| 11.7 MobileDoc (read, comment) | In progress | ortus-ios e0343b7..e9900d8 | Built; waiting for the simulator run on CI: DocView |
+| 11.8 MobileTasks and MobileApprovals (sign with eID, S1.9) | In progress | ortus-ios e0343b7..e9900d8 | Built; waiting for the simulator run on CI: ForYouView; signing re-confirms with the phone key |
+| 11.9 MobileNotifications and MobileSearch | In progress | ortus-ios e0343b7..e9900d8 | Built; waiting for the simulator run on CI: NotificationsView, SearchView |
+| 11.10 MobileAdmin (mailbox import failures, S2.4) | In progress | ortus-ios e0343b7..e9900d8 | Built; waiting for the simulator run on CI: AdminView |
 | 11.11 Phone steps S1.9, S2.4, S3.2 in the simulator on CI | | | |
 | 11.12 Slice review by a separate reviewer | | | |
 
-## Slices 12 and 13
+## Slice 12: Android app
 
-Not started. Break each into tasks when it begins.
+Done when the phone steps of S1 to S3 (S1.9, S2.4, S3.2) pass in the emulator on CI, and the 15 V1 phone boards are built.
+
+| Task | State | Commits | Notes |
+| --- | --- | --- | --- |
+| 12.0 Project and CI: Kotlin and Jetpack Compose, Gradle; a JVM `kit` module (API client, WebAuthn encoding, models) tested on any machine; CI builds the app and runs UI tests in the emulator against Ortus built on the runner; licence check of dependencies | | | |
+| 12.1 Joining with the welcome code, MobileWelcome, the phone's passkey in the Android Keystore behind biometrics (S3.2) | | | |
+| 12.2 Shell: bottom bar (Mail, Chat, Calendar, Files, More), six languages, Arabic right to left; MobileMore | | | |
+| 12.3 MobileInbox and MobileThread with RSVP | | | |
+| 12.4 MobileChats and MobileChannel | | | |
+| 12.5 MobileCalendar | | | |
+| 12.6 MobileDrive and MobileShare | | | |
+| 12.7 MobileDoc | | | |
+| 12.8 MobileTasks and MobileApprovals (S1.9) | | | |
+| 12.9 MobileNotifications and MobileSearch | | | |
+| 12.10 MobileAdmin (S2.4) | | | |
+| 12.11 Phone steps S1.9, S2.4, S3.2 in the emulator on CI | | | |
+| 12.12 Slice review by a separate reviewer | | | |
+
+## Slice 13: Release readiness (Gate D)
+
+Done when every V1 step of S1 to S3 passes on web and both phones on a fresh install.
+
+| Task | State | Commits | Notes |
+| --- | --- | --- | --- |
+| 13.0 Install guide: one machine (install script, service, backups, restore points, upgrade) and the chart (Kubernetes, PostgreSQL, S3), in the ortus-website repository as a static site, checked in CI (links, every command it names exists) | | | |
+| 13.1 API reference site: the OpenAPI of the core and every app, merged and rendered as static pages, regenerated from the pinned parts and checked against them | | | |
+| 13.2 Dependency licence audit: every Rust crate, npm package, Swift and Gradle dependency of every repository listed with its licence, permissive only, the list published with each release | Done | ortus (this commit) | tools/licences.py: every crate in the programs (cargo metadata, normal deps, Linux) and every shipped web package; permissive only (fonts under OFL the one exception); LICENSES.md kept in the repository, checked current by ci/check.sh, in each release archive. Phone apps: no third-party packages on iOS; Android uses AndroidX, Kotlin, kotlinx, OkHttp (Apache-2.0), checked by its ci/check.sh |
+| 13.3 Signed builds: release archives of the four programs and the container image with checksums and signatures (keyless where possible), the chart packaged; the phone apps built in CI (store signing is the owner's: OWNER-NEEDED) | In progress | ortus (this commit) | .github/workflows/release.yml: static programs for x86-64 and arm64, archives with install files and LICENSES.md, SHA256SUMS signed keylessly (cosign), multi-arch image signed; not yet run on a tag |
+| 13.4 ci/check.sh in every repository (ortus-brand and ortus-website included) | | | |
+| 13.5 Gate D: every V1 step of S1 to S3 on a fresh install, web and both phones; slice review; gate D review in this file | | | |
