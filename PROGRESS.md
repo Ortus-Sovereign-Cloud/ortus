@@ -66,8 +66,32 @@ Done when a label blocks a forbidden share and the attempt is in the audit log; 
 | 2.6 Data location facts and the outbound-calls check (nothing reaches a third-party cloud unless configured) | Done | ortus-core f054037 | Every outbound call noted with purpose; unconfigured hosts flagged; compliance report with audit verified |
 | 2.7 Admin › Sovereignty & compliance screen (AdminSovereignty) and the compliance report export | Done | ortus-core 2ae80d3 | Matches the board; owner edits partners, labels, periods, holds; report download |
 | 2.8 Story test S2.8; the slice's done-when test (a label blocks a share, the attempt is audited) in Rust and the browser | Done | ortus (this commit), ortus-core b466d00 | S2.8 in both shapes (partner, retention, audit checked); done-when in Rust on both engines (SECRET share refused and audited); its browser half comes with Drive's share dialog (5.x) |
-| 2.9 Slice review by a separate reviewer | Next | | |
+| 2.9 Slice review by a separate reviewer | Done | ortus-core 95c4d28, ortus-deploy 4e590d3 | Review below |
 
-## Slices 3 to 13
+Slice 2 review (separate reviewer, 2026-11-20): 1 high, 2 medium, 2 low-medium findings, all fixed in ortus-core 95c4d28 with tests: an authenticator secret that failed to open (a process left on an older key after a rotation) became an empty HMAC key whose codes anyone could compute (high; now refuses, empty secrets never match; the directory password likewise no longer becomes an anonymous bind); an unknown or deleted label was judged by the highest-ranked label (now by all-deny rules); the secrets check value was not re-sealed at start (now it is); account deletion ignored holds on channels (apps now get the rules); an override could pass unaudited (now refused if it cannot be recorded). Smaller: one address only in policy domains; key file permissions over a leftover temp file; rotation instructions in the chart. Left as a note: the compliance report (a GET) records an audit event and the last check; harmless. Slice 2 done.
+
+## Slice 3: Mail
+
+Done when mail goes to and from an outside server in CI, an IMAP app works, and S2.2, S2.4 and S2.9 pass. The app lives in ortus-mail; protocol parsing uses permissive crates (checked per crate) and our own server code.
+
+| Task | State | Commit | Notes |
+| --- | --- | --- | --- |
+| 3.0 App screens: the core serves each app's built web client under `/assets/apps/<id>/`, publishes a shared kit (`/assets/kit.js`: Lit, styles, API, translations) so apps share one Lit and one look, the shell loads an app's module when its path opens, app catalogs join the six languages; app repos get a web build and a browser-test harness | Next | | |
+| 3.1 Mail store: domains, addresses and aliases, mailboxes per person, messages (raw in the file store, metadata and threads in the database), flags, UIDs and modification sequences for IMAP, quota use | | | |
+| 3.2 Domains: add a domain, generate its records (MX, SPF, DKIM, DMARC, MTA-STS, autoconfig), check them on a schedule through a configurable resolver; Admin › Domains (AdminDomains); S2.2 | | | |
+| 3.3 Receiving: SMTP on the mail role, STARTTLS, recipient and size checks, SPF/DKIM/DMARC verdicts recorded, delivery into the store | | | |
+| 3.4 Sending: submission with app passwords, the outbound queue (MX lookup, retries, bounces), DKIM signing, TLS; the label policy decides before anything leaves | | | |
+| 3.5 Basic spam filter: authentication verdicts, header and content rules, a junk folder, people's junk/not-junk corrections | | | |
+| 3.6 App passwords in personal settings (for IMAP and submission) | | | |
+| 3.7 IMAP server (the subset real apps use: LOGIN/AUTHENTICATE PLAIN, LIST, SELECT, FETCH, STORE, SEARCH, UID, COPY/MOVE, APPEND, EXPUNGE, IDLE); tested with a real IMAP client | | | |
+| 3.8 JMAP (Core and Mail: session, Mailbox, Email, Thread, EmailSubmission, push) | | | |
+| 3.9 Web inbox and reading (threads, folders, search in mail) | | | |
+| 3.10 Compose (WebCompose): recipients with suggestions, attachments, drafts, send later, undo send, policy warnings with a reason | | | |
+| 3.11 Deliverability (AdminDeliverability): sent, delivered, bounced, queue; DMARC aggregate reports received and read; S2.9 | | | |
+| 3.12 Mailbox import from an old server over IMAP (Admin › Migrations), failures listed and retried; the web half of S2.4 | | | |
+| 3.13 CI: an outside mail server (container) exchanging mail both ways, with test DNS | | | |
+| 3.14 Slice review by a separate reviewer | | | |
+
+## Slices 4 to 13
 
 Not started. Break each into tasks when it begins.
