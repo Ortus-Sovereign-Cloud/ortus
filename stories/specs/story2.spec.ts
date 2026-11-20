@@ -3,6 +3,8 @@
 // S2.1  Taras opens the admin console for the first time and follows the
 //       setup checklist: creates the owner, saves the recovery kit, adds a
 //       passkey, signs out and back in with it, confirms where data lives.
+// S2.2  Taras adds ministry.example, copies the DNS records into the
+//       (test) DNS, and waits for the checks to turn green.
 // S2.3  Taras connects the HR directory and imports users and groups
 //       (a test OpenLDAP, ORTUS_TEST_LDAP; CI requires it).
 // S2.8  Taras sets data location, keys, federation partners and
@@ -71,6 +73,34 @@ story("Story 2", () => {
     await expect(data.getByText("Done", { exact: true })).toBeVisible();
     await expect(page.getByText("2 of 6 done")).toBeVisible();
     await page.context().storageState({ path: tarasState(ortus.dataDir) });
+  });
+
+  step("S2.2", async ({ browser, ortus }) => {
+    const page = await asTaras(browser, ortus.dataDir);
+    await page.goto("/admin/domains");
+    await page.getByRole("button", { name: "Add domain" }).click();
+    await page.getByLabel("Domain", { exact: true }).fill("ministry.example");
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    const tab = page.getByRole("tab", { name: /ministry\.example/ });
+    await expect(tab).toContainText("Waiting for DNS");
+
+    // He copies each record from the table into the DNS provider.
+    const records = page.getByRole("row");
+    const value = async (purpose: string) => (await records.filter({ hasText: purpose }).locator("td.value code").getAttribute("title"))!;
+    const name = async (purpose: string) => (await records.filter({ hasText: purpose }).locator("td.name code").textContent())!;
+    ortus.dns.publish("ministry.example", "MX", [{ preference: 10, exchange: "mail.ministry.example" }]);
+    ortus.dns.publish("ministry.example", "TXT", [[await value("SPF")]]);
+    const dkim = await value("DKIM RSA");
+    ortus.dns.publish(`${await name("DKIM RSA")}.ministry.example`, "TXT", [dkim.match(/.{1,255}/g)]);
+    ortus.dns.publish("_dmarc.ministry.example", "TXT", [[await value("DMARC")]]);
+
+    // The checks turn green.
+    await page.getByRole("button", { name: "Check now" }).click();
+    await expect(tab).toContainText("Verified");
+    for (const purpose of ["Receive mail", "SPF", "DKIM RSA", "DMARC"]) {
+      await expect(records.filter({ hasText: purpose }).first()).toContainText("OK");
+    }
+    await page.context().close();
   });
 
   step("S2.3", async ({ browser, ortus }) => {

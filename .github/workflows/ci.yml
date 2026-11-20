@@ -76,7 +76,10 @@ jobs:
           done
           cd stories && npm ci && npx playwright install --with-deps chromium
       - name: A test directory (OpenLDAP) for story S2.3
-        run: ci/fetch.sh && .deps/ortus-core/ci/ldap-test.sh 51389 | sed 's/^export //' >> "$GITHUB_ENV"
+        run: |
+          ci/fetch.sh
+          out="$(.deps/ortus-core/ci/ldap-test.sh 51389)"
+          echo "${out#export }" >> "$GITHUB_ENV"
       - run: ci/check.sh
       - uses: actions/upload-artifact@v4
         if: failure()

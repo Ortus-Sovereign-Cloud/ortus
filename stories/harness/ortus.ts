@@ -14,6 +14,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { randomBytes } from "node:crypto";
 import pg from "pg";
+import { startDns, type Dns } from "./dns.ts";
 
 export type Shape = "one-machine" | "cluster";
 
@@ -31,6 +32,8 @@ export interface Installation {
   dataDir: string;
   /** The PostgreSQL schema of a cluster-shaped installation. */
   schema?: string;
+  /** The DNS server this installation asks (records a story publishes). */
+  dns: Dns;
   /** The first-start token: `/setup#<token>` creates the first owner. */
   setupToken: string;
   /** Lines the program has printed so far, for failure reports. */
@@ -88,7 +91,10 @@ export async function startOrtus(env: Record<string, string> = {}): Promise<Inst
     ORTUS_SETUP_TOKEN: randomBytes(16).toString("hex"),
     // localhost, not 127.0.0.1: passkeys need a host name as their relying party.
     ORTUS_PUBLIC_URL: `http://localhost:${port}`,
+    ORTUS_MAIL_HOSTNAME: "mail.ministry.example",
   };
+  const dns = await startDns();
+  settings.ORTUS_DNS_SERVERS = dns.address;
   let dropSchema: (() => Promise<void>) | undefined;
   let schemaName: string | undefined;
   if (which === "cluster") {
@@ -129,6 +135,7 @@ export async function startOrtus(env: Record<string, string> = {}): Promise<Inst
     dataDir,
     schema: schemaName,
     setupToken: settings.ORTUS_SETUP_TOKEN!,
+    dns,
     log,
     async stop() {
       if (child.exitCode === null) {
@@ -137,6 +144,7 @@ export async function startOrtus(env: Record<string, string> = {}): Promise<Inst
         await exited;
       }
       await dropSchema?.();
+      await dns.stop();
       rmSync(dataDir, { recursive: true, force: true });
     },
   };

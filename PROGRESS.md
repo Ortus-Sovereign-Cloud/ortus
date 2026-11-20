@@ -76,12 +76,12 @@ Done when mail goes to and from an outside server in CI, an IMAP app works, and 
 
 | Task | State | Commit | Notes |
 | --- | --- | --- | --- |
-| 3.0 App screens: the core serves each app's built web client under `/assets/apps/<id>/`, publishes a shared kit (`/assets/kit.js`: Lit, styles, API, translations) so apps share one Lit and one look, the shell loads an app's module when its path opens, app catalogs join the six languages; app repos get a web build and a browser-test harness | Next | | |
-| 3.1 Mail store: domains, addresses and aliases, mailboxes per person, messages (raw in the file store, metadata and threads in the database), flags, UIDs and modification sequences for IMAP, quota use | | | |
-| 3.2 Domains: add a domain, generate its records (MX, SPF, DKIM, DMARC, MTA-STS, autoconfig), check them on a schedule through a configurable resolver; Admin › Domains (AdminDomains); S2.2 | | | |
-| 3.3 Receiving: SMTP on the mail role, STARTTLS, recipient and size checks, SPF/DKIM/DMARC verdicts recorded, delivery into the store | | | |
-| 3.4 Sending: submission with app passwords, the outbound queue (MX lookup, retries, bounces), DKIM signing, TLS; the label policy decides before anything leaves | | | |
-| 3.5 Basic spam filter: authentication verdicts, header and content rules, a junk folder, people's junk/not-junk corrections | | | |
+| 3.0 App screens: the core serves each app's built web client under `/assets/apps/<id>/`, publishes a shared kit (`/assets/kit.js`: Lit, styles, API, translations) so apps share one Lit and one look, the shell loads an app's module when its path opens, app catalogs join the six languages; app repos get a web build and a browser-test harness | Done | ortus-core 7c0295d, 2f86032; ortus-mail 56ed1b6 | Kit at /assets/kit.js, app web files, shell loading, app catalogs, admin sections; app repos build and browser-test their web clients |
+| 3.1 Mail store: domains, addresses and aliases, mailboxes per person, messages (raw in the file store, metadata and threads in the database), flags, UIDs and modification sequences for IMAP, quota use | Done | ortus-mail 3674684 | Mailboxes with IMAP numbers, raw in files, summaries and threads in the DB, retention and forgetting; both shapes |
+| 3.2 Domains: add a domain, generate its records (MX, SPF, DKIM, DMARC, MTA-STS, autoconfig), check them on a schedule through a configurable resolver; Admin › Domains (AdminDomains); S2.2 | Done | ortus-mail fde953f, 082dd05; ortus (S2.2) | DKIM keys sealed; records and checks via a configurable resolver; AdminDomains screen; S2.2 in the stories |
+| 3.3 Receiving: SMTP on the mail role, STARTTLS, recipient and size checks, SPF/DKIM/DMARC verdicts recorded, delivery into the store | Done | ortus-mail 205f355 | SMTP with STARTTLS, SPF/DKIM/DMARC verdicts, reject/quarantine; tested over TCP and TLS |
+| 3.4 Sending: submission with app passwords, the outbound queue (MX lookup, retries, bounces), DKIM signing, TLS; the label policy decides before anything leaves | Done | ortus-mail 0de3b52; ortus-core 47bc59d | Policy before sending, DKIM signing, local delivery, outbound jobs outside the transaction, retries and bounces; installation-to-installation test |
+| 3.5 Basic spam filter: authentication verdicts, header and content rules, a junk folder, people's junk/not-junk corrections | Next | | |
 | 3.6 App passwords in personal settings (for IMAP and submission) | | | |
 | 3.7 IMAP server (the subset real apps use: LOGIN/AUTHENTICATE PLAIN, LIST, SELECT, FETCH, STORE, SEARCH, UID, COPY/MOVE, APPEND, EXPUNGE, IDLE); tested with a real IMAP client | | | |
 | 3.8 JMAP (Core and Mail: session, Mailbox, Email, Thread, EmailSubmission, push) | | | |
