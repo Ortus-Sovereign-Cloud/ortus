@@ -147,7 +147,7 @@ Done when two people edit one document; S1.7 and S1.8 pass.
 | 6.6 Word and PDF: export DOCX and PDF, import DOCX | Done | ortus-docs 117b904 | DOCX export (docx) and import (mammoth), PDF by the browser's print from a clean window; round trip tested in the browser; prosemirror-view XSS fix, npm audit in the check |
 | 6.7 Docs in Drive and search: documents listed in Drive, opened from it, indexed by their text | Done | ortus-docs 7b1593e; ortus-drive 554f43a | Listed in Drive (DOC), opened from it; text indexed at checkpoints; found by whoever Drive lets see it |
 | 6.8 CI: S1.7 (two people edit, a suggestion accepted) and S1.8 (sent for approval, reviewed) in the browser, both shapes | Done | ortus stories/specs/docs.spec.ts | Release program, both shapes: Marek writes and shares, Ana suggests live, Marek accepts; Marek sends for approval, Olena approves by 14:05; found in search |
-| 6.9 Slice review by a separate reviewer | | | |
+| 6.9 Slice review by a separate reviewer | Done | ortus-docs 8d8d9d0 | 4 high, 6 medium, lows: updates dropped when the event buffer filled; readers behind a checkpoint got a gap (now told to reload and merge again; snapshot and updates read together); one broken update made a document unopenable (now skipped); commenters could post checkpoints; double approvals could skip reviewers; routes stuck when a reviewer left (now skipped, and editors can withdraw); reviewers saw later edits instead of the version sent; streams and presence unbounded; deleted documents left their content (hourly sweep), comments of forgotten people kept; 409 loop; names by address. Regression tests in ortus-docs tests/docs.rs and e2e |
 
 ## Slice 7: Tasks, approvals, signing, records, read-and-confirm
 
