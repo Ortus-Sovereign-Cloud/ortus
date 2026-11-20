@@ -86,8 +86,8 @@ Done when mail goes to and from an outside server in CI, an IMAP app works, and 
 | 3.7 IMAP server (the subset real apps use: LOGIN/AUTHENTICATE PLAIN, LIST, SELECT, FETCH, STORE, SEARCH, UID, COPY/MOVE, APPEND, EXPUNGE, IDLE); tested with a real IMAP client | Done | ortus-mail ae087cc | Own parser; 993 TLS, 143 STARTTLS, no password in the clear; Python imaplib client on both shapes |
 | 3.8 JMAP (Core and Mail: session, Mailbox, Email, Thread, EmailSubmission, push) | Done | ortus-mail 115caf2; ortus-core fdcf607 | Access::Header in core; result references, upload/download, import, push over SSE; both shapes |
 | 3.9 Web inbox and reading (threads, folders, search in mail) | Done | ortus-mail 8732228 | Board Main at 1440×900 (folders, labels, Important/Other/Feeds, catch-up, threads, attachments, quick reply, live via SSE); six languages, RTL |
-| 3.10 Compose (WebCompose): recipients with suggestions, attachments, drafts, send later, undo send, policy warnings with a reason; Snoozed and Scheduled folders of the Main board | Next | | |
-| 3.11 Deliverability (AdminDeliverability): sent, delivered, bounced, queue; DMARC aggregate reports received and read; S2.9 | | | |
+| 3.10 Compose (WebCompose): recipients with suggestions, attachments, drafts, send later, undo send, policy warnings with a reason; Snoozed and Scheduled folders of the Main board | Done | ortus-mail 8cc5507 | Board WebCompose; policy asked without recording, again when sending; undo = 10 s scheduled send; snooze job; six languages |
+| 3.11 Deliverability (AdminDeliverability): sent, delivered, bounced, queue; DMARC aggregate reports received and read; S2.9 | Next | | |
 | 3.12 Mailbox import from an old server over IMAP (Admin › Migrations), failures listed and retried; the web half of S2.4 | | | |
 | 3.13 CI: an outside mail server (container) exchanging mail both ways, with test DNS | | | |
 | 3.14 Slice review by a separate reviewer | | | |
