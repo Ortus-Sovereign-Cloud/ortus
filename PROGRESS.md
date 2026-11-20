@@ -84,9 +84,9 @@ Done when mail goes to and from an outside server in CI, an IMAP app works, and 
 | 3.5 Basic spam filter: authentication verdicts, header and content rules, a junk folder, people's junk/not-junk corrections | Done | ortus-mail e57a911, dbc51be | Scores with reasons in X-Ortus-Spam; Junk at 5; per-person corrections by sender |
 | 3.6 App passwords in personal settings (for IMAP and submission) | Done | ortus-core 0a67e11; ortus-mail 3fdb736 | Settings card in six languages; limits per address; submission on 587/465 with AUTH only over TLS |
 | 3.7 IMAP server (the subset real apps use: LOGIN/AUTHENTICATE PLAIN, LIST, SELECT, FETCH, STORE, SEARCH, UID, COPY/MOVE, APPEND, EXPUNGE, IDLE); tested with a real IMAP client | Done | ortus-mail ae087cc | Own parser; 993 TLS, 143 STARTTLS, no password in the clear; Python imaplib client on both shapes |
-| 3.8 JMAP (Core and Mail: session, Mailbox, Email, Thread, EmailSubmission, push) | Next | | |
-| 3.9 Web inbox and reading (threads, folders, search in mail) | | | |
-| 3.10 Compose (WebCompose): recipients with suggestions, attachments, drafts, send later, undo send, policy warnings with a reason | | | |
+| 3.8 JMAP (Core and Mail: session, Mailbox, Email, Thread, EmailSubmission, push) | Done | ortus-mail 115caf2; ortus-core fdcf607 | Access::Header in core; result references, upload/download, import, push over SSE; both shapes |
+| 3.9 Web inbox and reading (threads, folders, search in mail) | Done | ortus-mail 8732228 | Board Main at 1440×900 (folders, labels, Important/Other/Feeds, catch-up, threads, attachments, quick reply, live via SSE); six languages, RTL |
+| 3.10 Compose (WebCompose): recipients with suggestions, attachments, drafts, send later, undo send, policy warnings with a reason; Snoozed and Scheduled folders of the Main board | Next | | |
 | 3.11 Deliverability (AdminDeliverability): sent, delivered, bounced, queue; DMARC aggregate reports received and read; S2.9 | | | |
 | 3.12 Mailbox import from an old server over IMAP (Admin › Migrations), failures listed and retried; the web half of S2.4 | | | |
 | 3.13 CI: an outside mail server (container) exchanging mail both ways, with test DNS | | | |
