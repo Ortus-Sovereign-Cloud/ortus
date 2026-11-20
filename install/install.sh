@@ -63,8 +63,10 @@ if [ ! -e "$etc/ortus.toml" ]; then
 fi
 if [ ! -e "$etc/ortus.env" ]; then
   install -m 0640 /dev/null "$etc/ortus.env"
-  owner root:ortus "$etc/ortus.env"
 fi
+# The program reads its settings as the user ortus, however they were made.
+owner root:ortus "$etc/ortus.toml" "$etc/ortus.env"
+chmod 0640 "$etc/ortus.toml" "$etc/ortus.env"
 
 upgrade=no
 if [ -e "$bin/ortus" ]; then

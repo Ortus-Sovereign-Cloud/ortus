@@ -16,3 +16,6 @@ Choices the owner had not made, taken so work could continue. Each is reversible
 | 2026-11-20 | App repos: ortus-calendar holds calendar and people; ortus-tasks holds tasks and approvals | Matches the bundles in GOAL.md (ortus-mail = mail, calendar, contacts) | Split a repo |
 | 2026-11-20 | App crates depend on ortus-core by git URL, patched to the pinned checkout in .deps/ | One copy of the core in every build; the pin decides the commit | Publish crates to a registry |
 | 2026-11-20 | Admin and Settings are core screens (/admin, /settings), not apps; the page is also served under every known app path so the client can say "not installed" | They exist in every installation | Make them apps |
+| 2026-11-20 | The first demo deploy (task 1.18) came before tasks 1.10 to 1.17 | Sign-up, the website and passkeys were ready, and the owner wants the demo up early | None needed |
+| 2026-11-20 | With the website on, the root shows it even before the first owner exists; the setup page is reached through its link | The demo must greet visitors, not ask them to set it up | Turn the website off |
+| 2026-11-20 | Simple form controls are styled by Ortus itself; lit-material provides localisation and the complex widgets | The boards' dark Ortus style differs from Material 3 defaults | Theme lit-material controls instead |

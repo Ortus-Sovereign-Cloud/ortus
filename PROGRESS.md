@@ -47,7 +47,7 @@ Boards: AdminFirstRun, AdminUsers, AdminSignIn, WebWelcome, WebPersonal, AppSwit
 | 1.15 Admin: sign-in policy and devices (AdminSignIn) | | | |
 | 1.16 Welcome page and personal settings (WebWelcome, WebPersonal) | | | |
 | 1.17 Story tests S2.1 and S2.3; passkey sign-in in the browser (virtual authenticator) | | | |
-| 1.18 First demo deploy at ortus.cc | | | |
+| 1.18 First demo deploy at ortus.cc | Done | ortus f87ca40 | Live 2026-11-20: website, open sign-up (codes DKIM-signed as ortus.cc), passkeys; brought forward before 1.10–1.17 (DECISIONS); redeploys after each green ortus CI |
 | 1.19 Slice review by a separate reviewer; Gate A | | | |
 
 ## Slices 2 to 13
