@@ -108,7 +108,7 @@ Done when an invitation makes a round trip with an outside server and a CalDAV a
 | 4.7 Web contacts (WebContacts): the directory and one's own contacts, editing; six languages | Done | ortus-calendar 80c4393 | Organisation, groups, my contacts with search; contacts edited keep what a phone added; Mail opens Compose; browser test at 1440×900 |
 | 4.8 Mail and calendar together: the agenda column of the Main board, the invite card in a thread, the catch-up card counting invites | Done | ortus-mail 840d585; ortus-calendar 42bcd75; ortus-core 53317f5 | Agenda of today with the next event's countdown; invitation card (when, free or overlapping, Accept/Maybe/Decline); answers by mail shown; Invite chip; catch-up counts invites; mail asks /apps instead of probing |
 | 4.9 CI: an invitation round trip with the outside server (Postfix), and a CalDAV app syncing | Done | ortus stories/specs/calendar.spec.ts; ortus-calendar a75a083 | Release program with Postfix: invitation out, REPLY back through Postfix into the calendar and inbox; an outside invitation accepted in the inbox, REPLY reaches Postfix; CalDAV well-known, sync-collection both ways (vdirsyncer runs in ortus-calendar's CI). Also fixed: S2.2 picked DNS rows by substring (a random DKIM key could contain "spf"); an event made before the calendars loaded failed |
-| 4.10 Slice review by a separate reviewer | | | |
+| 4.10 Slice review by a separate reviewer | Done | ortus-calendar 01601b8; ortus-mail 49ed8ba | 13 findings (2 high, 6 medium, 5 low), all fixed with regression tests (ortus-calendar tests/review.rs): scheduling replaced copies organised by others; mail invitations not tied to their organiser, no SEQUENCE; single occurrences replaced/cancelled whole series; DAV chunk-size wraparound and slow clients; If-Match race on PostgreSQL; unbounded recurrence expansion (and through the public poll); repeats in UTC across DST (now the person's zone, TZID); moving events could lose them; control characters in text; folded UIDs in mail RSVP; substring "cancelled" checks; poll times off the half hour, a failed pick spent the link. Also: calendar apps' SRV records in mail domains |
 
 ## Slice 5: Drive and search (Gate B)
 
@@ -116,7 +116,7 @@ Done when a file is shared by label rules and search finds mail and files.
 
 | Task | State | Commits | Notes |
 | --- | --- | --- | --- |
-| 5.0 Streaming files in the core: chunked writes and range reads on a directory and S3 (multipart), sizes; resumable uploads through the API in parts | | | |
+| 5.0 Streaming files in the core: chunked writes and range reads on a directory and S3 (multipart), sizes; resumable uploads through the API in parts | Done | ortus-core e78690e | Files::writer (8 MiB parts), read_range, size; local writes go through <root>.writing and appear whole; tested 20 MiB on both stores. Resumable uploads are the drive's (5.2) |
 | 5.1 Drive store: folders, files, versions, trash, stars, recent, quotas on the account; both shapes; file contents in the file interface | | | |
 | 5.2 Drive API: list, folders, upload in parts, download with ranges, rename, move, copy, trash and restore, versions, stars | | | |
 | 5.3 Sharing: people and groups (view, comment, edit), links (view only, expiry, password, no download), the label policy decides every share and the audit log keeps it | | | |
