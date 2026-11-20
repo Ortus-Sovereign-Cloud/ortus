@@ -99,9 +99,9 @@ Done when an invitation makes a round trip with an outside server and a CalDAV a
 | Task | State | Commit | Notes |
 | --- | --- | --- | --- |
 | 4.0 Calendar store: calendars per person, events kept as iCalendar (UID, recurrence, exceptions, attendees, alarms), ETags and sync tokens, expansion of recurring events into a time range; both shapes | Done | ortus-calendar 69ab781 | calcard-next (jiff) for parsing and recurrence; sync changes per calendar; web client and browser tests in the repo |
-| 4.1 Contacts store: address books per person (vCard), plus the installation's people as a read-only directory; both shapes | | | |
-| 4.2 CalDAV (RFC 4791, 6578): discovery (/.well-known/caldav, principal, home set), PROPFIND, calendar-query and multiget REPORTs, sync-collection, PUT/DELETE with ETags, MKCALENDAR; app passwords; tested with a real CalDAV client | | | |
-| 4.3 CardDAV (RFC 6352): discovery, address books, addressbook-query and multiget, sync, PUT/DELETE; tested with a real client | | | |
+| 4.1 Contacts store: address books per person (vCard), plus the installation's people as a read-only directory; both shapes | Done | ortus-calendar 1de65f3 | vCard facts via calcard-next; sync changes; directory from active accounts |
+| 4.2 CalDAV (RFC 4791, 6578): discovery (/.well-known/caldav, principal, home set), PROPFIND, calendar-query and multiget REPORTs, sync-collection, PUT/DELETE with ETags, MKCALENDAR; app passwords; tested with a real CalDAV client | Done | ortus-calendar e7a298a; ortus-core caffaf7 | On the calendar app's DAV listener (rws takes no PROPFIND: owner item); vdirsyncer syncs both ways in CI; time-range queries expand recurrences |
+| 4.3 CardDAV (RFC 6352): discovery, address books, addressbook-query and multiget, sync, PUT/DELETE; tested with a real client | Done | ortus-calendar e7a298a | Same listener and client test; the directory is a read-only address book |
 | 4.4 Scheduling: invitations to colleagues straight into their calendars; to outside people by mail (iTIP/iMIP REQUEST, CANCEL), replies read from incoming mail (REPLY); incoming invitations shown in mail with Accept, Maybe, Decline, Propose; the label policy decides before an invitation leaves | | | |
 | 4.5 Free and busy: who is free when, for colleagues (respecting private events), the "Times that work" card in Compose and in the calendar | | | |
 | 4.6 Web calendar (WebCalendar): week view, creating and editing events, attendees with their free/busy, recurrence, RSVP; six languages | | | |
