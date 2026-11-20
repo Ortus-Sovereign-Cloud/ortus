@@ -1923,8 +1923,36 @@ dependencies = [
 name = "ortus"
 version = "0.1.0"
 dependencies = [
+ "ortus-calendar",
+ "ortus-calls",
+ "ortus-chat",
  "ortus-core",
+ "ortus-docs",
+ "ortus-drive",
+ "ortus-mail",
+ "ortus-tasks",
  "tokio",
+]
+
+[[package]]
+name = "ortus-calendar"
+version = "0.1.0"
+dependencies = [
+ "ortus-core",
+]
+
+[[package]]
+name = "ortus-calls"
+version = "0.1.0"
+dependencies = [
+ "ortus-core",
+]
+
+[[package]]
+name = "ortus-chat"
+version = "0.1.0"
+dependencies = [
+ "ortus-core",
 ]
 
 [[package]]
@@ -1933,15 +1961,77 @@ version = "0.1.0"
 dependencies = [
  "hex",
  "opendal",
+ "opendal-http-transport-reqwest",
+ "reqwest",
  "rusqlite",
  "rust-embed",
  "rust-web-server",
+ "rustls",
  "serde",
  "serde_json",
  "sha2",
  "tokio",
  "tokio-postgres",
  "toml",
+ "webpki-roots",
+]
+
+[[package]]
+name = "ortus-docs"
+version = "0.1.0"
+dependencies = [
+ "ortus-core",
+]
+
+[[package]]
+name = "ortus-drive"
+version = "0.1.0"
+dependencies = [
+ "ortus-core",
+]
+
+[[package]]
+name = "ortus-mail"
+version = "0.1.0"
+dependencies = [
+ "ortus-core",
+]
+
+[[package]]
+name = "ortus-program-chat"
+version = "0.1.0"
+dependencies = [
+ "ortus-calls",
+ "ortus-chat",
+ "ortus-core",
+ "tokio",
+]
+
+[[package]]
+name = "ortus-program-drive"
+version = "0.1.0"
+dependencies = [
+ "ortus-core",
+ "ortus-docs",
+ "ortus-drive",
+ "tokio",
+]
+
+[[package]]
+name = "ortus-program-mail"
+version = "0.1.0"
+dependencies = [
+ "ortus-calendar",
+ "ortus-core",
+ "ortus-mail",
+ "tokio",
+]
+
+[[package]]
+name = "ortus-tasks"
+version = "0.1.0"
+dependencies = [
+ "ortus-core",
 ]
 
 [[package]]

@@ -6,11 +6,23 @@ Part of Ortus, a sovereign workspace for organisations and governments: mail, ca
 
 Status: early development, not ready for use.
 
+## Programs
+
+| Program | Apps |
+| --- | --- |
+| `ortus` | every app: mail, calendar, people, drive, docs, chat, calls, tasks, approvals |
+| `ortus-mail` | mail, calendar, people |
+| `ortus-drive` | drive, docs |
+| `ortus-chat` | chat, calls |
+
+Each is the core plus the apps of the pinned app repositories (`pins.toml`); every one has the same command line, settings and install.
+
 ## Building
 
 ```sh
 ci/fetch.sh               # the pinned parts (pins.toml) under .deps/, with their web clients
-cargo build --release     # target/release/ortus
+cargo build --release     # target/release/ortus, ortus-mail, ortus-drive, ortus-chat
+docker build --build-arg PROGRAM=ortus -t ortus .   # the container image of one program
 ```
 
 `ci/check.sh` runs every check CI runs.

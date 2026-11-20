@@ -3,10 +3,12 @@
 # the built web clients). The image ships only the program, which is
 # MIT/Apache-licensed code linked against musl (MIT): no base system.
 FROM rust:1.99-alpine3.22 AS build
+# ortus (every app), or one of ortus-mail, ortus-drive, ortus-chat.
+ARG PROGRAM=ortus
 RUN apk add --no-cache musl-dev
 WORKDIR /src
 COPY . .
-RUN cargo build --release --locked && install -D -m 0755 target/release/ortus /out/ortus \
+RUN cargo build --release --locked --bin "$PROGRAM" && install -D -m 0755 "target/release/$PROGRAM" /out/ortus \
     && install -d -m 0750 -o 65532 -g 65532 /out/data /out/run
 
 FROM scratch

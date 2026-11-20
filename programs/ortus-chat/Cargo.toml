@@ -1,0 +1,18 @@
+[package]
+name = "ortus-program-chat"
+description = "Ortus chat and calls, on their own."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "ortus-chat"
+path = "src/main.rs"
+
+[dependencies]
+ortus-core = { workspace = true }
+ortus-chat = { workspace = true }
+ortus-calls = { workspace = true }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }

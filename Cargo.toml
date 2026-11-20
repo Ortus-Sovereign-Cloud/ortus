@@ -1,5 +1,5 @@
 [workspace]
-members = ["programs/ortus"]
+members = ["programs/ortus", "programs/ortus-mail", "programs/ortus-drive", "programs/ortus-chat"]
 resolver = "2"
 
 [workspace.package]
@@ -9,7 +9,43 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/Ortus-Sovereign-Cloud/ortus"
 publish = false
 
+[workspace.dependencies]
+ortus-core = { git = "https://github.com/Ortus-Sovereign-Cloud/ortus-core" }
+ortus-mail = { git = "https://github.com/Ortus-Sovereign-Cloud/ortus-mail" }
+ortus-calendar = { git = "https://github.com/Ortus-Sovereign-Cloud/ortus-calendar" }
+ortus-drive = { git = "https://github.com/Ortus-Sovereign-Cloud/ortus-drive" }
+ortus-docs = { git = "https://github.com/Ortus-Sovereign-Cloud/ortus-docs" }
+ortus-chat = { git = "https://github.com/Ortus-Sovereign-Cloud/ortus-chat" }
+ortus-calls = { git = "https://github.com/Ortus-Sovereign-Cloud/ortus-calls" }
+ortus-tasks = { git = "https://github.com/Ortus-Sovereign-Cloud/ortus-tasks" }
+
 [profile.release]
 lto = "thin"
 codegen-units = 4
 strip = "debuginfo"
+
+# Every part is built from the commit in pins.toml, checked out under
+# .deps/ by ci/fetch.sh, never from a branch.
+[patch."https://github.com/Ortus-Sovereign-Cloud/ortus-core"]
+ortus-core = { path = ".deps/ortus-core" }
+
+[patch."https://github.com/Ortus-Sovereign-Cloud/ortus-mail"]
+ortus-mail = { path = ".deps/ortus-mail" }
+
+[patch."https://github.com/Ortus-Sovereign-Cloud/ortus-calendar"]
+ortus-calendar = { path = ".deps/ortus-calendar" }
+
+[patch."https://github.com/Ortus-Sovereign-Cloud/ortus-drive"]
+ortus-drive = { path = ".deps/ortus-drive" }
+
+[patch."https://github.com/Ortus-Sovereign-Cloud/ortus-docs"]
+ortus-docs = { path = ".deps/ortus-docs" }
+
+[patch."https://github.com/Ortus-Sovereign-Cloud/ortus-chat"]
+ortus-chat = { path = ".deps/ortus-chat" }
+
+[patch."https://github.com/Ortus-Sovereign-Cloud/ortus-calls"]
+ortus-calls = { path = ".deps/ortus-calls" }
+
+[patch."https://github.com/Ortus-Sovereign-Cloud/ortus-tasks"]
+ortus-tasks = { path = ".deps/ortus-tasks" }

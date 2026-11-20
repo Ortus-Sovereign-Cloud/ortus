@@ -8,5 +8,12 @@ repository.workspace = true
 publish.workspace = true
 
 [dependencies]
-ortus-core = { path = "../../.deps/ortus-core" }
+ortus-core = { workspace = true }
+ortus-mail = { workspace = true }
+ortus-calendar = { workspace = true }
+ortus-drive = { workspace = true }
+ortus-docs = { workspace = true }
+ortus-chat = { workspace = true }
+ortus-calls = { workspace = true }
+ortus-tasks = { workspace = true }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
