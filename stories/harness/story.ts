@@ -35,7 +35,9 @@ export function findStep(id: string): Step {
  * One installation for every step of a story file: fresh for each file,
  * even when one worker runs several files.
  */
-export const test = base.extend<{ ortus: Installation }, { installations: Map<string, Promise<Installation>> }>({
+export const test = base.extend<{ ortus: Installation; ortusEnv: Record<string, string> }, { installations: Map<string, Promise<Installation>> }>({
+  // More settings for the story's installation: test.use({ ortusEnv: {...} }).
+  ortusEnv: [{}, { option: true }],
   installations: [
     // eslint-disable-next-line no-empty-pattern
     async ({}, use) => {
@@ -45,13 +47,13 @@ export const test = base.extend<{ ortus: Installation }, { installations: Map<st
     },
     { scope: "worker" },
   ],
-  ortus: async ({ installations }, use, info) => {
+  ortus: async ({ installations, ortusEnv }, use, info) => {
     // Steps are declared in this file (see step()), so the spec file is
     // the first part of the title path, not info.file.
     const file = info.titlePath[0] ?? info.file;
     let started = installations.get(file);
     if (!started) {
-      started = startOrtus();
+      started = startOrtus(ortusEnv);
       installations.set(file, started);
     }
     const installation = await started;

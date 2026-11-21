@@ -36,7 +36,10 @@ for shape in ${ORTUS_STORY_SHAPES:-one-machine cluster}; do
     echo "check: skipped the cluster shape (set ORTUS_TEST_POSTGRES and ORTUS_TEST_S3_*)"
     continue
   fi
-  (cd stories && ORTUS_STORY_SHAPE="$shape" npx playwright test && node tools/coverage.mjs | tail -n 1)
+  # Every V1 step must pass (Gate D): in the browser, or on the phones.
+  (cd stories && ORTUS_STORY_SHAPE="$shape" npx playwright test \
+    && { node tools/coverage.mjs --strict > test-results/coverage.txt || { cat test-results/coverage.txt; exit 1; }; } \
+    && tail -n 1 test-results/coverage.txt)
   # Many people at once, within latency and error budgets (a small size
   # here; LOAD_PEOPLE and LOAD_SECONDS make it larger).
   (cd stories && ORTUS_STORY_SHAPE="$shape" node load/load.ts | tail -n 16)
