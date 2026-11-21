@@ -2796,6 +2796,48 @@
         ]
       }
     },
+    "/api/v1/calls/live": {
+      "get": {
+        "description": "For anyone signed in.",
+        "operationId": "callsLive",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Any error, in the common error format."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "The calls going on in rooms one is in: room, name, kind, startedAt and who is in each.",
+        "tags": [
+          "calls"
+        ]
+      }
+    },
     "/api/v1/calls/rooms/:room": {
       "get": {
         "description": "For anyone signed in.",
