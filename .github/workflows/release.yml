@@ -85,10 +85,16 @@ jobs:
             cp -r install LICENSE-APACHE LICENSE-MIT LICENSES.md README.md "dist/$dir/"
             tar -C dist -czf "dist/$dir.tar.gz" "$dir"
           done
+      - name: The ortus image of this machine
+        run: docker save build-ortus | gzip > image-${{ matrix.arch }}.tar.gz
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: archives-${{ matrix.arch }}
           path: dist/*.tar.gz
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: image-${{ matrix.arch }}
+          path: image-${{ matrix.arch }}.tar.gz
 
   publish:
     needs: build
@@ -132,6 +138,8 @@ jobs:
           gh release create "$REF" dist/* --title "Ortus $REF" --notes-file LICENSES.md --verify-tag
 
   image:
+    # The images the build jobs made natively on each machine, joined into
+    # one image for both (no emulated build).
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -139,36 +147,35 @@ jobs:
       id-token: write
       packages: write
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with:
-          node-version: "24"
+          pattern: image-*
+          merge-multiple: true
       - uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3
-      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
-      # The parts are fetched and staged before any registry login, so no
-      # build step sees the registry's credentials.
-      - name: The pinned parts
+      - name: Both machines' images load and run
         run: |
-          ci/fetch.sh
-          ci/stage.sh stage
-      - name: Image for both machines (built only, on a dry run)
-        if: env.PUBLISH != 'true'
-        run: docker buildx build --platform linux/amd64,linux/arm64 --build-arg PROGRAM=ortus stage
+          for arch in x86_64 aarch64; do
+            gunzip -c "image-$arch.tar.gz" | docker load
+            docker tag build-ortus "ortus-$arch"
+            docker image inspect "ortus-$arch" --format "$arch: {{.Os}}/{{.Architecture}}"
+          done
+          docker run --rm ortus-x86_64 version
       - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         if: env.PUBLISH == 'true'
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
-      - name: Image for both machines, signed
+      - name: One image for both machines, signed
         if: env.PUBLISH == 'true'
         env:
           REF: ${{ github.ref_name }}
         run: |
           repo=ghcr.io/ortus-sovereign-cloud/ortus
-          docker buildx build --platform linux/amd64,linux/arm64 --build-arg PROGRAM=ortus -t "$repo:$REF" -t "$repo:${REF#v}" --push stage
+          docker tag ortus-x86_64 "$repo:$REF-amd64"
+          docker tag ortus-aarch64 "$repo:$REF-arm64"
+          docker push "$repo:$REF-amd64"
+          docker push "$repo:$REF-arm64"
+          docker buildx imagetools create -t "$repo:$REF" -t "$repo:${REF#v}" "$repo:$REF-amd64" "$repo:$REF-arm64"
           digest=$(docker buildx imagetools inspect "$repo:$REF" --format '{{json .Manifest}}' | python3 -c 'import json,sys; print(json.load(sys.stdin)["digest"])')
           cosign sign --yes "$repo@$digest"
