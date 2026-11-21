@@ -39,7 +39,10 @@ async function phoneGreen(repo) {
     phoneCi.set(
       repo,
       (async () => {
-        const runs = await fetch(`https://api.github.com/repos/Ortus-Sovereign-Cloud/${repo}/actions/workflows/ci.yml/runs?branch=main&status=completed&per_page=1`, { headers }).then((r) => (r.ok ? r.json() : { workflow_runs: [] }));
+        const answer = await fetch(`https://api.github.com/repos/Ortus-Sovereign-Cloud/${repo}/actions/workflows/ci.yml/runs?branch=main&status=completed&per_page=1`, { headers });
+        // A refusal (the anonymous rate limit) is not a red CI: say which.
+        if (!answer.ok) return `${repo}: GitHub did not answer (${answer.status})`;
+        const runs = await answer.json();
         const run = runs.workflow_runs?.[0];
         if (run?.conclusion !== "success") return `${repo}: CI not green on main`;
         const pinned = (await raw(repo, run.head_sha, "pins.toml")).match(/^ortus = "([0-9a-f]{40})"$/m)?.[1];

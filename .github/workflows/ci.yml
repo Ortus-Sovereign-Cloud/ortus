@@ -91,6 +91,10 @@ jobs:
       - name: The PDF signature validator (pyHanko, MIT)
         run: python3 -m venv /tmp/pyhanko && /tmp/pyhanko/bin/pip install -q "pyhanko==0.25.3"
       - run: ci/check.sh
+        env:
+          # The phone repositories' CI is asked of GitHub's API: signed in,
+          # not anonymous (shared runners hit the anonymous limit).
+          GITHUB_TOKEN: ${{ github.token }}
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
