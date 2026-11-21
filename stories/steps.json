@@ -97,7 +97,11 @@
     "text": "Signs with her eID on her phone.",
     "board": "MobileApprovals",
     "release": "V1",
-    "v1": true
+    "v1": true,
+    "phones": {
+      "ortus-ios": "WelcomeTests.testThePhoneBecomesTheKey (signing)",
+      "ortus-android": "WelcomeTest.thePhoneBecomesTheKey (signing)"
+    }
   },
   {
     "id": "S1.10",
@@ -164,7 +168,11 @@
     "board": "MobileAdmin",
     "release": "V1",
     "v1": true,
-    "v1_scope": "Imports the mailboxes from the old server and fixes two failures (on the web; the phones' Admin screen does it from his phone)."
+    "v1_scope": "Imports the mailboxes from the old server and fixes two failures (on the web; the phones' Admin screen does it from his phone).",
+    "phones": {
+      "ortus-ios": "WelcomeTests.testAnAdministratorFixesImports",
+      "ortus-android": "WelcomeTest.anAdministratorFixesImports, LiveTest.anAdministratorFixesTheImports"
+    }
   },
   {
     "id": "S2.5",
@@ -176,7 +184,7 @@
     "board": "AdminSignIn",
     "release": "V1",
     "v1": true,
-    "v1_scope": "Keeps passkeys on (phone, computer, security key) and turns passwords off; smart cards come with Ortus OS (V2)."
+    "v1_scope": "Keeps passkeys on (phone, computer, security key; smart cards through the organisation's sign-in, a national eID over OIDC or SAML) and turns passwords off."
   },
   {
     "id": "S2.6",

@@ -113,6 +113,9 @@ story("Story 1 and 2 · Sign-in", () => {
     const passkeys = page.getByRole("switch", { name: "Passkey" });
     await expect(passkeys).toBeChecked();
     await expect(passkeys).toBeDisabled();
+    // Smart cards and national eID sign in through the organisation's own
+    // sign-in (OpenID Connect or SAML), its row on this screen.
+    await expect(page.getByRole("switch", { name: "Organisation sign-in" })).toBeAttached();
 
     // Passwords off: refused while Marek would be locked out.
     const passwords = page.getByRole("switch", { name: "Password with app code" });
