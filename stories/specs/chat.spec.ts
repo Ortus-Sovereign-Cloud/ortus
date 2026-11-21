@@ -113,8 +113,13 @@ story("Story 1 and 3 · Chat", () => {
     await calendar.getByRole("button", { name: /Logistics stand-up/ }).first().click();
     const viewer = calendar.getByRole("dialog", { name: "Logistics stand-up" });
     await viewer.getByRole("button", { name: "Accept" }).click();
-    const mine = await (await iryna.request.get(`/api/v1/calendar/events?from=${start - 3600000}&to=${start + 3600000}`, { headers })).json();
-    const ev = mine.events.find((e: { summary: string }) => e.summary === "Logistics stand-up");
-    expect(String(ev.answer).toLowerCase()).toBe("accepted");
+    // The answer is saved after the click returns: wait for it.
+    await expect
+      .poll(async () => {
+        const mine = await (await iryna.request.get(`/api/v1/calendar/events?from=${start - 3600000}&to=${start + 3600000}`, { headers })).json();
+        const ev = mine.events.find((e: { summary: string }) => e.summary === "Logistics stand-up");
+        return String(ev?.answer).toLowerCase();
+      }, { timeout: 10_000 })
+      .toBe("accepted");
   });
 });
