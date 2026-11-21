@@ -8,6 +8,9 @@ name: release
 on:
   push:
     tags: ["v*"]
+  # A dry run: everything built and signed, kept as CI artifacts; no
+  # release, no image pushed.
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -43,7 +46,7 @@ jobs:
       - name: Archives
         run: |
           python3 tools/licences.py > LICENSES.md
-          version="${GITHUB_REF_NAME}"
+          version="${GITHUB_REF_NAME//\//-}"
           for program in ortus ortus-mail ortus-drive ortus-chat; do
             dir="$program-$version-${{ matrix.arch }}-linux"
             mkdir -p "dist/$dir"
@@ -71,7 +74,19 @@ jobs:
           cd dist
           sha256sum *.tar.gz > SHA256SUMS
           cosign sign-blob --yes --output-signature SHA256SUMS.sig --output-certificate SHA256SUMS.pem SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release
+          path: dist
+      - name: Check the signature as the guide says
+        run: |
+          cd dist
+          sha256sum --check SHA256SUMS
+          cosign verify-blob --certificate SHA256SUMS.pem --signature SHA256SUMS.sig \
+            --certificate-identity-regexp "^https://github.com/${GITHUB_REPOSITORY}/" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com SHA256SUMS
       - name: The release
+        if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release create "$GITHUB_REF_NAME" dist/* --title "Ortus $GITHUB_REF_NAME" --notes-file LICENSES.md --verify-tag
@@ -95,8 +110,13 @@ jobs:
       - name: Image for both machines, signed
         run: |
           ci/fetch.sh
-          image="ghcr.io/ortus-sovereign-cloud/ortus:${GITHUB_REF_NAME}"
+          image="ghcr.io/ortus-sovereign-cloud/ortus:${GITHUB_REF_NAME//\//-}"
           ci/stage.sh stage
+          if [[ "$GITHUB_REF" != refs/tags/v* ]]; then
+            # The dry run builds both machines' image and pushes nothing.
+            docker buildx build --platform linux/amd64,linux/arm64 --build-arg PROGRAM=ortus -t "$image" stage
+            exit 0
+          fi
           docker buildx build --platform linux/amd64,linux/arm64 --build-arg PROGRAM=ortus -t "$image" --push stage
           digest=$(docker buildx imagetools inspect "$image" --format '{{json .Manifest}}' | python3 -c 'import json,sys; print(json.load(sys.stdin)["digest"])')
           cosign sign --yes "ghcr.io/ortus-sovereign-cloud/ortus@$digest"
