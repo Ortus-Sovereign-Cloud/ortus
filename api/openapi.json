@@ -809,6 +809,48 @@
         ]
       }
     },
+    "/api/v1/admin/photos": {
+      "put": {
+        "description": "For administrators and owners.",
+        "operationId": "setPhotoUploads",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Any error, in the common error format."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Whether people may upload their own photo: {allowed}. Photos from the directory stay.",
+        "tags": [
+          "people"
+        ]
+      }
+    },
     "/api/v1/admin/policy": {
       "get": {
         "description": "For administrators and owners.",
@@ -1734,6 +1776,48 @@
         ]
       }
     },
+    "/api/v1/admin/users/:id/photo": {
+      "delete": {
+        "description": "For administrators and owners.",
+        "operationId": "removePersonPhoto",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Any error, in the common error format."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Remove someone's photo.",
+        "tags": [
+          "people"
+        ]
+      }
+    },
     "/api/v1/admin/users/:id/reset": {
       "post": {
         "description": "For administrators and owners.",
@@ -2010,6 +2094,10 @@
                           "path": {
                             "description": "Where the app lives in the web client.",
                             "type": "string"
+                          },
+                          "today": {
+                            "description": "Whether the app has a card on the start page (its /assets/apps/<id>/today.js).",
+                            "type": "boolean"
                           }
                         },
                         "required": [
@@ -7923,6 +8011,128 @@
         ]
       }
     },
+    "/api/v1/me/photo": {
+      "delete": {
+        "description": "For anyone signed in.",
+        "operationId": "removeMyPhoto",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Any error, in the common error format."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Remove your photo (your initials show instead).",
+        "tags": [
+          "people"
+        ]
+      },
+      "get": {
+        "description": "For anyone signed in.",
+        "operationId": "getMyPhoto",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Any error, in the common error format."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Whether you have a photo (its source: own or directory) and may upload one.",
+        "tags": [
+          "people"
+        ]
+      },
+      "put": {
+        "description": "For anyone signed in.",
+        "operationId": "setMyPhoto",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Any error, in the common error format."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Your photo: the image itself as the body (PNG, JPEG or WebP, at most 512 KB).",
+        "tags": [
+          "people"
+        ]
+      }
+    },
     "/api/v1/me/place": {
       "put": {
         "description": "For anyone signed in.",
@@ -8599,6 +8809,50 @@
         ]
       }
     },
+    "/api/v1/people/:id/photo": {
+      "get": {
+        "description": "For anyone signed in.",
+        "operationId": "getPhoto",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "The image (PNG, JPEG or WebP).",
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Success.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Any error, in the common error format."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "A colleague's photo, by account; 204 No Content when they have none.",
+        "tags": [
+          "people"
+        ]
+      }
+    },
     "/api/v1/people/contacts": {
       "get": {
         "description": "For anyone signed in.",
@@ -8842,6 +9096,50 @@
           }
         ],
         "summary": "The organisation's groups, with their member counts.",
+        "tags": [
+          "people"
+        ]
+      }
+    },
+    "/api/v1/people/photo": {
+      "get": {
+        "description": "For anyone signed in.",
+        "operationId": "getPhotoByAddress",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "The image (PNG, JPEG or WebP).",
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Success.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Any error, in the common error format."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "A colleague's photo, by address (?email=); 204 No Content when there is none.",
         "tags": [
           "people"
         ]

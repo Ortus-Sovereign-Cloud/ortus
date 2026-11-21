@@ -7,7 +7,9 @@
 // A step done on the phones (`phones` in steps.json: repository and test)
 // also needs each phone repository's CI green on main, run against a program
 // commit with the same parts as this one; a phone-only step counts by that.
+import { execFileSync } from "node:child_process";
 import { readFileSync, existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 const steps = JSON.parse(readFileSync(new URL("../steps.json", import.meta.url)));
 const resultsFile = new URL("../test-results/results.json", import.meta.url);
@@ -27,7 +29,21 @@ if (existsSync(resultsFile)) {
 
 // The phone repositories' CI: green on main, and run against a program
 // commit that pins exactly the parts this one does (their pins.toml names
-// it; its pins.toml is compared with ours).
+// it; its pins.toml is compared with ours) and whose own code is this
+// one's (programs/, Cargo.toml, Cargo.lock: compared with what is checked
+// here, the working tree included).
+const root = fileURLToPath(new URL("../..", import.meta.url));
+const CODE = ["programs", "Cargo.toml", "Cargo.lock"];
+function codeChangedSince(sha) {
+  const git = (...args) => execFileSync("git", ["-C", root, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  try {
+    git("cat-file", "-e", `${sha}^{commit}`);
+  } catch {
+    // A shallow checkout (CI): that commit's files, not its history.
+    git("fetch", "-q", "--depth=1", "origin", sha);
+  }
+  return git("diff", "--name-only", sha, "--", ...CODE).split("\n").filter(Boolean);
+}
 const ours = readFileSync(new URL("../../pins.toml", import.meta.url), "utf8");
 const parts = (text) => text.split("\n").filter((l) => /^ortus-[a-z]+ = "[0-9a-f]{40}"$/.test(l)).sort().join("\n");
 const phoneCi = new Map();
@@ -48,6 +64,8 @@ async function phoneGreen(repo) {
         const pinned = (await raw(repo, run.head_sha, "pins.toml")).match(/^ortus = "([0-9a-f]{40})"$/m)?.[1];
         if (!pinned) return `${repo}: no program pin at ${run.head_sha}`;
         if (parts(await raw("ortus", pinned, "pins.toml")) !== parts(ours)) return `${repo}: tested against ortus ${pinned.slice(0, 7)}, whose parts differ from these`;
+        const changed = codeChangedSince(pinned);
+        if (changed.length) return `${repo}: tested against ortus ${pinned.slice(0, 7)}; the program's code changed since (${changed.slice(0, 3).join(", ")}${changed.length > 3 ? ", …" : ""})`;
         return "";
       })().catch((e) => `${repo}: ${e}`),
     );

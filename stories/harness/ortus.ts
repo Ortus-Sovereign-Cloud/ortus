@@ -80,6 +80,18 @@ async function waitForHealth(url: string, child: ChildProcess, log: string[]): P
 
 /** Starts a fresh installation. Extra settings go in `env`. */
 export async function startOrtus(env: Record<string, string> = {}): Promise<Installation> {
+  // A free port can be taken by another program between being picked and
+  // being listened on (a busy machine): then start again on new ports.
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await startOnce(env);
+    } catch (e) {
+      if (attempt >= 3 || !String(e).includes("is already in use")) throw e;
+    }
+  }
+}
+
+async function startOnce(env: Record<string, string>): Promise<Installation> {
   const which = shape();
   const binary = resolve(process.env.ORTUS_BINARY ?? join(import.meta.dirname, "..", "..", "target", "release", "ortus"));
   const dataDir = mkdtempSync(join(tmpdir(), "ortus-story-"));
@@ -137,7 +149,16 @@ export async function startOrtus(env: Record<string, string> = {}): Promise<Inst
   child.stdout?.on("data", (chunk: Buffer) => log.push(chunk.toString()));
   child.stderr?.on("data", (chunk: Buffer) => log.push(chunk.toString()));
   const url = settings.ORTUS_PUBLIC_URL!;
-  await waitForHealth(url, child, log);
+  try {
+    await waitForHealth(url, child, log);
+  } catch (e) {
+    // What this attempt made goes, so another can start cleanly.
+    if (child.exitCode === null) child.kill("SIGTERM");
+    await dropSchema?.();
+    await dns.stop();
+    rmSync(dataDir, { recursive: true, force: true });
+    throw e;
+  }
   return {
     url,
     shape: which,
