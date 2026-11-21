@@ -14,6 +14,10 @@ data_dir = "/var/lib/ortus"
 # Ortus listens here; put a TLS reverse proxy in front of it.
 ip = "127.0.0.1"
 port = 7878
+# The address people reach the installation at, through the proxy: links
+# in mail, the setup link, passkeys and invitations use it. Set it before
+# the first start.
+# public_url = "https://ortus.example.org"
 
 # PostgreSQL instead of SQLite in data_dir:
 # [database]

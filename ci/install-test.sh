@@ -17,7 +17,7 @@ trap 'rm -rf "$work"' EXIT
 # A staged install puts every file in place and never overwrites settings.
 ORTUS_ROOT="$work/root" install/install.sh "$binary" >/dev/null
 for f in usr/local/bin/ortus etc/ortus/ortus.toml etc/ortus/ortus.env \
-  etc/systemd/system/ortus.service etc/systemd/system/ortus-backup.service etc/systemd/system/ortus-backup.timer; do
+  etc/systemd/system/ortus.service etc/systemd/system/ortus-backup.service etc/systemd/system/ortus-backup.timer usr/local/sbin/ortusctl; do
   [ -e "$work/root/$f" ] || { echo "install-test: staged install lacks $f" >&2; exit 1; }
 done
 echo "# changed" >> "$work/root/etc/ortus/ortus.toml"

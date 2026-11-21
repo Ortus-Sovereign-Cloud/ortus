@@ -87,6 +87,9 @@ fi
 [ "$upgrade" = yes ] && cp -p "$bin/ortus" "$bin/ortus.previous"
 install -m 0755 "$binary" "$bin/ortus.new"
 mv -f "$bin/ortus.new" "$bin/ortus"
+# ortusctl runs a command as the service does (its user, settings, ortus.env).
+install -d -m 0755 "$root/usr/local/sbin"
+install -m 0755 "$here/ortusctl" "$root/usr/local/sbin/ortusctl"
 for unit in ortus.service ortus-backup.service ortus-backup.timer; do
   install -m 0644 "$here/$unit" "$units/$unit"
 done

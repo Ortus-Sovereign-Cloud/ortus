@@ -19,7 +19,9 @@ mkdir -p api
 target/release/ortus reference > target/openapi.json
 target/release/ortus help | sed -n 's/^  \([a-z][a-z-]*\).*/\1/p' | sort -u > target/commands.txt
 python3 tools/licences.py > target/LICENSES.md
-for f in api/openapi.json api/commands.txt LICENSES.md; do
+# Every ORTUS_* setting the programs read (the guide may name only these).
+grep -rhoE 'ORTUS_[A-Z0-9_]+[A-Z0-9]' .deps/*/src programs/*/src install | sort -u > target/settings.txt
+for f in api/openapi.json api/commands.txt api/settings.txt LICENSES.md; do
   made="target/$(basename "$f")"
   if [ -n "${ORTUS_UPDATE_REFERENCE:-}" ]; then cp "$made" "$f"; fi
   cmp -s "$made" "$f" || { echo "check: $f is stale: run ORTUS_UPDATE_REFERENCE=1 ci/check.sh and commit it" >&2; exit 1; }

@@ -1,0 +1,17 @@
+#!/bin/sh
+# Runs an ortus command the way the service runs: as the ortus user, with
+# /etc/ortus/ortus.toml and /etc/ortus/ortus.env (the database, S3 and
+# backup settings live there), in /var/lib/ortus. Run as root:
+#
+#   sudo ortusctl setup-link
+#   sudo ortusctl backup /var/lib/ortus/backups/before-upgrade
+#
+# Paths it writes must be writable by ortus (under /var/lib/ortus).
+set -eu
+[ "$(id -u)" = 0 ] || { echo "ortusctl: run as root (sudo)" >&2; exit 1; }
+exec systemd-run --quiet --wait --pipe --collect --service-type=exec \
+  --uid=ortus --gid=ortus \
+  -p EnvironmentFile=-/etc/ortus/ortus.env \
+  -p WorkingDirectory=/var/lib/ortus \
+  -E ORTUS_CONFIG=/etc/ortus/ortus.toml \
+  /usr/local/bin/ortus "$@"

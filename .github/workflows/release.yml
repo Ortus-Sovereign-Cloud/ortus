@@ -1,24 +1,51 @@
-# A release: for a tag vX.Y.Z on main, every program for x86-64 and arm64
-# Linux (static, musl), each in an archive with the install files and the
-# licences, SHA256SUMS over them, the container image of `ortus` for both
-# machines, and keyless signatures (Sigstore) of the sums and the image,
-# naming this workflow. Nothing else signs Ortus releases.
+# A release: for a tag vX.Y.Z on main whose CI passed, every program for
+# x86-64 and arm64 Linux (static, musl), each in an archive with the install
+# files and the licences, SHA256SUMS over them, and the container image of
+# `ortus` for both machines (tagged vX.Y.Z and X.Y.Z, which the chart uses).
+# The sums and the image are signed keylessly (Sigstore): the certificate
+# names this workflow at the tag. Only the publish and image jobs can sign
+# or write; the build jobs, which run third-party build code, get neither.
+#
+# Run by hand it is a dry run: built and signed (the certificate names a
+# branch, which the guide's check refuses), kept as CI artifacts; nothing
+# is released and no image is pushed.
 name: release
 
 on:
   push:
     tags: ["v*"]
-  # A dry run: everything built and signed, kept as CI artifacts; no
-  # release, no image pushed.
   workflow_dispatch:
 
-permissions:
-  contents: write
-  id-token: write
-  packages: write
+permissions: {}
+
+env:
+  # A real release: a pushed tag, never a run by hand.
+  PUBLISH: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
 
 jobs:
+  gate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: The tag is on main and its CI passed
+        if: env.PUBLISH == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main || { echo "release: $GITHUB_SHA is not on main" >&2; exit 1; }
+          ok=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci --commit "$GITHUB_SHA" --json conclusion --jq '[.[] | select(.conclusion == "success")] | length')
+          [ "$ok" -ge 1 ] || { echo "release: CI did not pass on $GITHUB_SHA" >&2; exit 1; }
+
   build:
+    needs: gate
+    permissions:
+      contents: read
     strategy:
       matrix:
         include:
@@ -28,8 +55,10 @@ jobs:
             runner: ubuntu-24.04-arm
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
       - name: The pinned parts
@@ -44,9 +73,11 @@ jobs:
             docker rm "$id"
           done
       - name: Archives
+        env:
+          REF: ${{ github.ref_name }}
         run: |
           python3 tools/licences.py > LICENSES.md
-          version="${GITHUB_REF_NAME//\//-}"
+          version="${REF//\//-}"
           for program in ortus ortus-mail ortus-drive ortus-chat; do
             dir="$program-$version-${{ matrix.arch }}-linux"
             mkdir -p "dist/$dir"
@@ -54,7 +85,7 @@ jobs:
             cp -r install LICENSE-APACHE LICENSE-MIT LICENSES.md README.md "dist/$dir/"
             tar -C dist -czf "dist/$dir.tar.gz" "$dir"
           done
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: archives-${{ matrix.arch }}
           path: dist/*.tar.gz
@@ -62,61 +93,82 @@ jobs:
   publish:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           path: dist
           merge-multiple: true
-      - uses: sigstore/cosign-installer@v3
+      - uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3
       - name: Sums and their signature
         run: |
           cd dist
           sha256sum *.tar.gz > SHA256SUMS
           cosign sign-blob --yes --output-signature SHA256SUMS.sig --output-certificate SHA256SUMS.pem SHA256SUMS
-      - uses: actions/upload-artifact@v4
-        with:
-          name: release
-          path: dist
       - name: Check the signature as the guide says
         run: |
           cd dist
           sha256sum --check SHA256SUMS
+          if [ "$PUBLISH" = true ]; then identity="^https://github.com/${GITHUB_REPOSITORY}/\.github/workflows/release\.yml@refs/tags/v"; else identity="^https://github.com/${GITHUB_REPOSITORY}/\.github/workflows/release\.yml@"; fi
           cosign verify-blob --certificate SHA256SUMS.pem --signature SHA256SUMS.sig \
-            --certificate-identity-regexp "^https://github.com/${GITHUB_REPOSITORY}/" \
+            --certificate-identity-regexp "$identity" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com SHA256SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release
+          path: dist
       - name: The release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: env.PUBLISH == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/* --title "Ortus $GITHUB_REF_NAME" --notes-file LICENSES.md --verify-tag
+          REF: ${{ github.ref_name }}
+        run: |
+          python3 tools/licences.py > LICENSES.md
+          gh release create "$REF" dist/* --title "Ortus $REF" --notes-file LICENSES.md --verify-tag
 
   image:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
-      - uses: sigstore/cosign-installer@v3
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
+      - uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3
+      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      # The parts are fetched and staged before any registry login, so no
+      # build step sees the registry's credentials.
+      - name: The pinned parts
+        run: |
+          ci/fetch.sh
+          ci/stage.sh stage
+      - name: Image for both machines (built only, on a dry run)
+        if: env.PUBLISH != 'true'
+        run: docker buildx build --platform linux/amd64,linux/arm64 --build-arg PROGRAM=ortus stage
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        if: env.PUBLISH == 'true'
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
       - name: Image for both machines, signed
+        if: env.PUBLISH == 'true'
+        env:
+          REF: ${{ github.ref_name }}
         run: |
-          ci/fetch.sh
-          image="ghcr.io/ortus-sovereign-cloud/ortus:${GITHUB_REF_NAME//\//-}"
-          ci/stage.sh stage
-          if [[ "$GITHUB_REF" != refs/tags/v* ]]; then
-            # The dry run builds both machines' image and pushes nothing.
-            docker buildx build --platform linux/amd64,linux/arm64 --build-arg PROGRAM=ortus -t "$image" stage
-            exit 0
-          fi
-          docker buildx build --platform linux/amd64,linux/arm64 --build-arg PROGRAM=ortus -t "$image" --push stage
-          digest=$(docker buildx imagetools inspect "$image" --format '{{json .Manifest}}' | python3 -c 'import json,sys; print(json.load(sys.stdin)["digest"])')
-          cosign sign --yes "ghcr.io/ortus-sovereign-cloud/ortus@$digest"
+          repo=ghcr.io/ortus-sovereign-cloud/ortus
+          docker buildx build --platform linux/amd64,linux/arm64 --build-arg PROGRAM=ortus -t "$repo:$REF" -t "$repo:${REF#v}" --push stage
+          digest=$(docker buildx imagetools inspect "$repo:$REF" --format '{{json .Manifest}}' | python3 -c 'import json,sys; print(json.load(sys.stdin)["digest"])')
+          cosign sign --yes "$repo@$digest"

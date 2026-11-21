@@ -8,27 +8,85 @@ Fails when a licence is not one Ortus takes: permissive only.
 """
 import glob, json, os, re, subprocess, sys
 
-ALLOWED = {"MIT", "MIT-0", "Apache-2.0", "Apache-2.0 WITH LLVM-exception", "BSD-2-Clause", "BSD-3-Clause", "BSL-1.0",
+ALLOWED = {"MIT", "MIT-0", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "BSL-1.0",
            "ISC", "Zlib", "0BSD", "CC0-1.0", "Unlicense", "Unicode-3.0", "Unicode-DFS-2016", "CDLA-Permissive-2.0", "BlueOak-1.0.0"}
-# The fonts of the web clients (SIL Open Font License), the one agreed exception.
-EXCEPTIONS = {"@fontsource-variable/geist", "@fontsource-variable/noto-sans-arabic"}
-# Packages whose lock entry gives no (or an old-style) licence: their own
-# licence files say these.
-KNOWN = {"pdfjs-dist": "Apache-2.0", "duck": "BSD-2-Clause", "@napi-rs/canvas": "MIT"}
+# Exceptions an allowed licence may carry (they only add permissions).
+ALLOWED_WITH = {"LLVM-exception"}
+# The web clients' fonts: the one agreed exception, and only under the SIL
+# Open Font License.
+FONTS = {"@fontsource-variable/geist", "@fontsource-variable/noto-sans-arabic"}
+# Lock entries that give no licence or no SPDX one, for these exact
+# versions and exactly that lock value: their own licence files say these
+# (checked by hand; a new version, or a lock that says something else,
+# fails until it is checked again).
+KNOWN = {
+    ("pdfjs-dist", "4.10.38", ""): "Apache-2.0",
+    ("duck", "0.1.12", "BSD"): "BSD-2-Clause",
+    ("@napi-rs/canvas", "0.1.100", ""): "MIT",
+}
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def tokens(expr):
+    return re.findall(r"\(|\)|[A-Za-z0-9.+-]+", expr)
 
 
 def acceptable(expr):
-    """An SPDX expression any of whose OR choices is all allowed."""
-    expr = (expr or "").replace("/", " OR ").replace("(", " ").replace(")", " ")
-    for choice in re.split(r"\s+OR\s+", expr):
-        parts = [p.strip() for p in re.split(r"\s+AND\s+", choice) if p.strip()]
-        if parts and all(p in ALLOWED for p in parts):
-            return True
-    return False
+    """An SPDX expression that holds with allowed licences only: OR needs one
+    side allowed, AND both, `X WITH e` needs X allowed and e an additive
+    exception. Anything it cannot read fails."""
+    toks = tokens((expr or "").replace("/", " OR "))
+    pos = 0
+
+    def peek():
+        return toks[pos] if pos < len(toks) else None
+
+    def take(want=None):
+        nonlocal pos
+        t = peek()
+        if t is None or (want and t != want):
+            raise ValueError(expr)
+        pos += 1
+        return t
+
+    def atom():
+        if peek() == "(":
+            take("(")
+            v = disjunction()
+            take(")")
+            return v
+        name = take()
+        if name in ("AND", "OR", "WITH", ")"):
+            raise ValueError(expr)
+        ok = name in ALLOWED
+        if peek() == "WITH":
+            take("WITH")
+            ok = ok and take() in ALLOWED_WITH
+        return ok
+
+    def conjunction():
+        v = atom()
+        while peek() == "AND":
+            take("AND")
+            v = atom() and v
+        return v
+
+    def disjunction():
+        v = conjunction()
+        while peek() == "OR":
+            take("OR")
+            v = conjunction() or v
+        return v
+
+    try:
+        v = disjunction()
+        return v and pos == len(toks)
+    except ValueError:
+        return False
 
 
 def crates():
-    meta = json.loads(subprocess.check_output(["cargo", "metadata", "--format-version", "1", "--filter-platform", "x86_64-unknown-linux-gnu"], cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    meta = json.loads(subprocess.check_output(["cargo", "metadata", "--format-version", "1", "--filter-platform", "x86_64-unknown-linux-gnu"], cwd=ROOT))
     nodes = {n["id"]: n for n in meta["resolve"]["nodes"]}
     pkgs = {p["id"]: p for p in meta["packages"]}
     seen, todo = set(), list(meta["workspace_members"])
@@ -51,19 +109,24 @@ def crates():
 
 def web():
     out = {}
-    for lock in glob.glob(".deps/*/web/package-lock.json"):
+    for lock in glob.glob(os.path.join(ROOT, ".deps", "*", "web", "package-lock.json")):
         for path, info in json.load(open(lock))["packages"].items():
             if not path or info.get("dev") or info.get("devOptional"):
                 continue
             name = path.split("node_modules/")[-1]
-            known = KNOWN.get(name) or KNOWN.get(name.split("-android")[0].split("-darwin")[0].split("-linux")[0].split("-win32")[0])
-            out[(name, info.get("version", ""))] = known or info.get("license", "")
+            version = info.get("version", "")
+            licence = info.get("license") or ""
+            base = re.sub(r"-(android|darwin|linux|win32|freebsd)-.*$", "", name)
+            licence = KNOWN.get((name, version, licence)) or KNOWN.get((base, version, licence)) or licence
+            out[(name, version)] = licence
+    if not out:
+        sys.exit("licences: no web packages found: run ci/fetch.sh first")
     return [("npm", n, v, l, "") for (n, v), l in out.items()]
 
 
 def main():
     rows = sorted(crates() + web(), key=lambda r: (r[0], r[1].lower(), r[2]))
-    bad = [r for r in rows if not acceptable(r[3]) and r[1] not in EXCEPTIONS]
+    bad = [r for r in rows if not (acceptable(r[3]) or (r[1] in FONTS and r[3] == "OFL-1.1"))]
     print("# Licences of what Ortus ships\n")
     print(f"Ortus is MIT OR Apache-2.0. These are the {len(rows)} parts others wrote that the programs carry (Rust crates in the binary, packages in the web clients), with their licences. The web clients' fonts are under the SIL Open Font License.\n")
     print("| Kind | Name | Version | Licence |\n| --- | --- | --- | --- |")
