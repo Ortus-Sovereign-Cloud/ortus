@@ -56,7 +56,11 @@ story("Story 3 · First day", () => {
     await dialog.getByRole("button", { name: "Send invitation" }).click();
     const answer = await sent;
     expect(answer.ok(), await answer.text()).toBeTruthy();
-    await expect(page.getByText("Invitation sent.")).toBeVisible();
+    // This installation sends no mail: the link to pass on, with its QR code.
+    const sentDialog = page.getByRole("dialog", { name: "Invitation for Iryna Melnyk" });
+    await expect(sentDialog.getByRole("status")).toHaveText("This installation sends no mail. Give them this link.");
+    await expect(sentDialog.getByLabel("Invitation link", { exact: true })).toHaveValue(((await answer.json()) as { link: string }).link);
+    await sentDialog.getByRole("button", { name: "Done" }).click();
     // She is listed, invited, in Logistics.
     const row = page.getByRole("row").filter({ hasText: "iryna@ministry.example" });
     await expect(row).toContainText("Iryna Melnyk");

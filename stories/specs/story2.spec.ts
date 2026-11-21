@@ -144,6 +144,55 @@ story("Story 2", () => {
     await page.context().close();
   });
 
+  // An invitation the administrator hands over: the address is a mailbox
+  // here (ministry.example since S2.2), which its person cannot open yet.
+  test("Invitations: a new person at our own domain gets the link by hand", async ({ browser, ortus }) => {
+    const page = await asTaras(browser, ortus.dataDir);
+    await page.goto("/admin/users");
+    await page.getByRole("button", { name: "Invite people" }).click();
+    const form = page.getByRole("dialog", { name: "Invite people" });
+    await form.getByLabel("Name").fill("Bohdan Tsap");
+    await form.getByLabel("Work email").fill("bohdan@ministry.example");
+    await expect(form.getByText("bohdan@ministry.example is a mailbox here")).toBeVisible();
+    await form.getByRole("button", { name: "Send invitation" }).click();
+    const sent = page.getByRole("dialog", { name: "Invitation for Bohdan Tsap" });
+    await expect(sent.getByRole("status")).toHaveText("This installation sends no mail. Give them this link.");
+    await expect(sent.getByRole("img", { name: "QR code of the invitation link" })).toBeVisible();
+    await expect(sent.getByText(/^Valid until .+, once\.$/)).toBeVisible();
+    const first = await sent.getByLabel("Invitation link", { exact: true }).inputValue();
+    await sent.getByRole("button", { name: "Done" }).click();
+
+    // A new link (the first stops working), then withdrawn, then another.
+    await page.getByRole("row").filter({ hasText: "bohdan@ministry.example" }).click();
+    const panel = page.getByRole("complementary", { name: "Bohdan Tsap" });
+    await expect(panel).toContainText("Link valid until");
+    await panel.getByRole("button", { name: "New link" }).click();
+    await expect(sent.getByRole("status")).toHaveText("A new link. The old one no longer works.");
+    const second = await sent.getByLabel("Invitation link", { exact: true }).inputValue();
+    expect(second).not.toBe(first);
+    await sent.getByRole("button", { name: "Done" }).click();
+    await panel.getByRole("button", { name: "Withdraw the link" }).click();
+    await expect(page.getByRole("status")).toHaveText("The link no longer works.");
+    await expect(panel).toContainText("No valid link.");
+    await panel.getByRole("button", { name: "New link" }).click();
+    const third = await sent.getByLabel("Invitation link", { exact: true }).inputValue();
+    await sent.getByRole("button", { name: "Done" }).click();
+
+    // The old links are refused; the last one lets Bohdan in.
+    const bohdan = await browser.newContext();
+    for (const old of [first, second]) {
+      const tried = await bohdan.request.post("/api/v1/invitation/accept", { headers: { "X-Requested-With": "ortus" }, data: { token: new URL(old).hash.slice(1) } });
+      expect(tried.status()).toBe(410);
+    }
+    const welcome = await bohdan.newPage();
+    await welcome.goto(new URL(third).pathname + new URL(third).hash);
+    await expect(welcome).toHaveURL(/\/welcome$/);
+    await bohdan.close();
+    await page.reload();
+    await expect(page.getByRole("row").filter({ hasText: "bohdan@ministry.example" })).not.toContainText("Invited");
+    await page.context().close();
+  });
+
   step("S2.8", async ({ browser, ortus }) => {
     const page = await asTaras(browser, ortus.dataDir);
     await page.goto("/admin/sovereignty");
