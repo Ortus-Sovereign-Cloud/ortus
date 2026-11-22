@@ -132,7 +132,7 @@ Ortus is MIT OR Apache-2.0. These are the 541 parts others wrote that the progra
 | crate | flate2 | 1.1.11 | MIT OR Apache-2.0 |
 | crate | fnv | 1.0.7 | Apache-2.0 / MIT |
 | crate | foldhash | 0.2.0 | Zlib |
-| crate | form_urlencoded | 1.2.2 | MIT OR Apache-2.0 |
+| crate | form_urlencoded | 1.2.3 | MIT OR Apache-2.0 |
 | crate | fs_extra | 1.3.0 | MIT |
 | crate | futures | 0.3.34 | MIT OR Apache-2.0 |
 | crate | futures-channel | 0.3.34 | MIT OR Apache-2.0 |
@@ -430,7 +430,7 @@ Ortus is MIT OR Apache-2.0. These are the 541 parts others wrote that the progra
 | crate | untrusted | 0.7.1 | ISC |
 | crate | untrusted | 0.9.0 | ISC |
 | crate | uppsala | 0.12.1 | BSD-2-Clause |
-| crate | url | 2.5.8 | MIT OR Apache-2.0 |
+| crate | url | 2.5.9 | MIT OR Apache-2.0 |
 | crate | url-build-parse | 12.1.0 | MIT OR Apache-2.0 OR ISC OR LGPL-3.0-or-later OR CC-BY-4.0 |
 | crate | url-search-params | 12.0.0 | MIT OR Apache-2.0 OR ISC OR LGPL-3.0-or-later OR CC-BY-4.0 |
 | crate | utf8_iter | 1.1.0 | Apache-2.0 OR MIT |
