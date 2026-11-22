@@ -25,7 +25,9 @@ test("a sample organisation fills a fresh installation", async ({ ortus }) => {
   const signIn = await fill(ortus.url, ortus.setupToken, "ministry.example", () => undefined);
   expect(signIn.email).toBe("olena@ministry.example");
 
-  // The owner signs in with what the script gave.
+  // The owner signs in with what the script gave: the next code (Ortus
+  // takes each authenticator code once, and the script used this one).
+  await new Promise((r) => setTimeout(r, 30_000 - (Date.now() % 30_000) + 1_000));
   const headers = { "X-Requested-With": "ortus", "Content-Type": "application/json" };
   const ticket = (await (await fetch(`${ortus.url}/api/v1/session/password`, { method: "POST", headers, body: JSON.stringify({ email: signIn.email, password: signIn.password }) })).json()) as { ticket: string };
   const signed = await fetch(`${ortus.url}/api/v1/session/code`, { method: "POST", headers, body: JSON.stringify({ ticket: ticket.ticket, code: totp(signIn.secret) }) });
