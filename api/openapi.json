@@ -1611,6 +1611,46 @@
       }
     },
     "/api/v1/admin/users/:id": {
+      "delete": {
+        "description": "For administrators and owners.",
+        "operationId": "removePerson",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Any error, in the common error format."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Remove a person and everything of theirs (owners only): {confirm, their address typed again}. Not yourself, the last owner, or someone under a retention hold.",
+        "tags": [
+          "people"
+        ]
+      },
       "patch": {
         "description": "For administrators and owners.",
         "operationId": "changePerson",
@@ -6453,6 +6493,130 @@
         "summary": "Follow an invitation link: {token}. Signs in; next, add a sign-in method.",
         "tags": [
           "people"
+        ]
+      }
+    },
+    "/api/v1/mail/admin/addresses": {
+      "get": {
+        "description": "For administrators and owners.",
+        "operationId": "listMailAddresses",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Any error, in the common error format."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Every address people have besides their own (address, person), and the mail domains they can be in.",
+        "tags": [
+          "mail"
+        ]
+      },
+      "post": {
+        "description": "For administrators and owners.",
+        "operationId": "addMailAddress",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Any error, in the common error format."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Give a person another address: {address, user_id}. It must be in one of the mail domains and nobody else's; mail to it is theirs, and they may send from it.",
+        "tags": [
+          "mail"
+        ]
+      }
+    },
+    "/api/v1/mail/admin/addresses/:address": {
+      "delete": {
+        "description": "For administrators and owners.",
+        "operationId": "removeMailAddress",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Any error, in the common error format."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "summary": "Take an address away from its person.",
+        "tags": [
+          "mail"
         ]
       }
     },
