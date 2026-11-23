@@ -1,11 +1,11 @@
 # The exact commit of every part the Ortus programs are built from.
 # ci/fetch.sh checks each one out under .deps/ and builds its web client.
 # Change a pin only to a commit whose own CI is green.
-ortus-core = "1cabf2786e92904c90630231adfa81780f0715cc"
-ortus-mail = "74222e6df088e8c2cfad58c56ce0b4b8ff9e5b44"
-ortus-calendar = "d3d9a229db02e0fe4528452286bc5d16da44df5c"
+ortus-core = "23011dc7e12fb882996f34647ea79ba5fcebc3a7"
+ortus-mail = "72476e025cd78aa4a2ea85fa01701779fe181f59"
+ortus-calendar = "73779e9a8617c207a80ceab19dd7bf0be364ed05"
 ortus-drive = "ece2b18f7b4dad101d280a5729e5d3939f6db45f"
-ortus-docs = "09522094305ba12571d8eeaaf5b6b795a2ed1039"
-ortus-chat = "63737bb43ba114b833edf74c3c0cd8354fc7ff76"
-ortus-calls = "e9dd6d5a802b308dd1f823239df8780698d7c003"
+ortus-docs = "72aacf26d3c51fd1024cccf2897a3ba540738208"
+ortus-chat = "ebc9ed9f86375cfdb56d2dbca37a74e0c0153505"
+ortus-calls = "84cb6c65691e0e214667c86caae36d3d78e6a501"
 ortus-tasks = "a0f06eedac2a73f6c0461bbd6b8318a04e7a0507"

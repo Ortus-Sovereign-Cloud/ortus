@@ -2825,6 +2825,7 @@ dependencies = [
  "tokio-postgres-rustls",
  "toml",
  "uppsala",
+ "webpki-root-certs",
  "webpki-roots",
 ]
 

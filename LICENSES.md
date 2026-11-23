@@ -1,6 +1,6 @@
 # Licences of what Ortus ships
 
-Ortus is MIT OR Apache-2.0. These are the 541 parts others wrote that the programs carry (Rust crates in the binary, packages in the web clients), with their licences. The web clients' fonts are under the SIL Open Font License.
+Ortus is MIT OR Apache-2.0. These are the 542 parts others wrote that the programs carry (Rust crates in the binary, packages in the web clients), with their licences. The web clients' fonts are under the SIL Open Font License.
 
 | Kind | Name | Version | Licence |
 | --- | --- | --- | --- |
@@ -440,6 +440,7 @@ Ortus is MIT OR Apache-2.0. These are the 541 parts others wrote that the progra
 | crate | version_check | 0.9.5 | MIT/Apache-2.0 |
 | crate | walkdir | 2.5.0 | Unlicense/MIT |
 | crate | want | 0.3.2 | MIT |
+| crate | webpki-root-certs | 1.0.12 | CDLA-Permissive-2.0 |
 | crate | webpki-roots | 1.0.12 | CDLA-Permissive-2.0 |
 | crate | weezl | 0.1.12 | MIT OR Apache-2.0 |
 | crate | whoami | 2.1.3 | Apache-2.0 OR BSL-1.0 OR MIT |

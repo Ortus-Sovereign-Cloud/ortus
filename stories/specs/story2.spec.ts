@@ -286,7 +286,7 @@ story("Story 2", () => {
       await page.setViewportSize({ width: 1440, height: 900 });
       await page.goto("/admin/backup");
       const screen = page.locator("ortus-admin-backup");
-      await expect(screen.getByRole("heading", { level: 1 })).toHaveText("Backup, restore & integrations");
+      await expect(screen.getByRole("heading", { level: 1 })).toHaveText("Backup & restore");
       const restore = screen.getByRole("region", { name: "Restore" });
       // The hourly point may not have come yet on a fresh installation.
       const take = restore.getByRole("button", { name: "Take one now" });
@@ -296,7 +296,9 @@ story("Story 2", () => {
       await restore.getByRole("button", { name: "Test a restore now" }).click();
       await expect(restore.getByText(/^Last restore test: .* · full site recovery in /)).toBeVisible({ timeout: 120_000 });
 
-      // The case-management system: a webhook for filed records and approvals.
+      // The case-management system: a webhook for filed records and approvals
+      // (Integrations has its own page in the console).
+      await page.getByRole("link", { name: "Integrations" }).click();
       const integrations = screen.getByRole("region", { name: "Integrations" });
       await integrations.getByRole("button", { name: "Add a webhook" }).click();
       await integrations.getByLabel("Name").fill("Case management system");

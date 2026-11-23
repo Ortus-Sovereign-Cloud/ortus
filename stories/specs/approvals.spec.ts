@@ -26,6 +26,18 @@ async function colleague(browser: Browser, baseURL: string, name: string, email:
   const page = await (await browser.newContext({ baseURL, timezoneId: "UTC" })).newPage();
   await page.goto(link.pathname + link.hash);
   await expect(page).toHaveURL(/\/welcome$/);
+  // Their passkey (this browser's authenticator), as the welcome page asks.
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("WebAuthn.enable");
+  await cdp.send("WebAuthn.addVirtualAuthenticator", {
+    options: { protocol: "ctap2", transport: "internal", hasResidentKey: true, hasUserVerification: true, isUserVerified: true, automaticPresenceSimulation: true },
+  });
+  await page.goto("/settings/security");
+  await page.locator("ortus-security").getByLabel("Name", { exact: true }).fill("Laptop");
+  await page.getByRole("button", { name: "Add a passkey" }).click();
+  await expect(page.getByText("The passkey is added.")).toBeVisible();
+  // Back to the welcome page, where a newcomer starts.
+  await page.goto("/welcome");
   return page;
 }
 
@@ -118,6 +130,12 @@ story("Story 1 · Approvals and records", () => {
       const review = page.locator("ortus-docs-review");
       await expect(review.getByRole("article")).toContainText("Approved for use by all districts");
       await review.getByRole("region", { name: "Your turn" }).getByRole("button", { name: button, exact: true }).click();
+      // Signing asks them to confirm it is them: their passkey.
+      if (button === "Sign") {
+        const confirm = page.getByRole("dialog", { name: "Confirm it is you" });
+        const asked = await confirm.waitFor({ state: "visible", timeout: 5000 }).then(() => true, () => false);
+        if (asked) await confirm.getByRole("button", { name: "Use my passkey" }).click();
+      }
       return review;
     };
     await expect((await decide(marek, "Sign")).getByRole("status")).toContainText("not your turn");
@@ -128,6 +146,11 @@ story("Story 1 · Approvals and records", () => {
     await expect(review.getByRole("region", { name: "Route" })).toContainText("File and publish");
     await katarzyna.screenshot({ path: "test-results/s1.9-approvals.png" });
     await review.getByRole("region", { name: "Your turn" }).getByRole("button", { name: "Sign", exact: true }).click();
+    // She confirms it is her with her passkey, then it signs.
+    const confirm = katarzyna.getByRole("dialog", { name: "Confirm it is you" });
+    if (await confirm.waitFor({ state: "visible", timeout: 5000 }).then(() => true, () => false)) {
+      await confirm.getByRole("button", { name: "Use my passkey" }).click();
+    }
     await expect(review.getByRole("status")).toContainText("Everyone signed");
     record = (await review.getByRole("link", { name: "Open the record" }).getAttribute("href"))!;
     expect(record).toMatch(/^\/records\?record=/);
