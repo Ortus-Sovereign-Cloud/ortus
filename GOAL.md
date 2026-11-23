@@ -26,7 +26,7 @@ Read this file, `PROGRESS.md`, `DECISIONS.md` and `OWNER-NEEDED.md` at the start
 - **Calls:** own media server in the program, small calls first (up to 12 people).
 - **Encryption:** server-side by default; an admin may allow end-to-end rooms, which are then excluded from search, records and legal hold.
 - **Signing in V1:** with certificates the organisation issues. Qualified eID signatures come after V1.
-- **Phones:** native Swift and Kotlin on the public API. iOS builds and tests on GitHub's macOS runners. End-to-end rooms use hand-written bindings to vodozemac.
+- **Phones:** native Swift and Kotlin on the public API. iOS builds and tests on GitHub's macOS runners. End-to-end rooms on phones are shown locked in V1; hand-written bindings to vodozemac come in V2 (DECISIONS 2026-11-23).
 - **Security review:** our own, per slice (below). No outside review is planned.
 - **Front page and sign-in:** an installation's root address shows the project website to visitors and the app once signed in, on the same host. The project website (what Ortus is, install guide, links) is a setting that only the public demo at ortus.cc turns on; an organisation's own installation opens on its sign-in page. The website is in the same six languages as the app.
 - **After signing in:** the first time, the All apps chooser; after that, straight into the app used last, with the chooser one click away on the rail.
