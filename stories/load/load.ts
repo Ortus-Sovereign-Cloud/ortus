@@ -208,6 +208,9 @@ type Trace = [number, string, number][];
 type Failures = Map<string, string[]>;
 
 async function person(until: number, p: Person, timings: Timings, failures: Failures, pauses = true, trace?: Trace, origin = 0): Promise<void> {
+  // People start their day at different moments, not all in the same
+  // millisecond (that burst was a tenth of the run's slow operations).
+  if (pauses) await new Promise((r) => setTimeout(r, Math.random() * (PAUSE ?? 600)));
   while (Date.now() < until) {
     const op = choose();
     const started = performance.now();
@@ -305,6 +308,30 @@ async function database(): Promise<{ commits: number; waiting: Record<string, nu
     return undefined;
   } finally {
     await c.end().catch(() => {});
+  }
+}
+
+/** The program's slow requests (ORTUS_SLOW_MS), by route: how many, and
+ * on average how long, how many statements, how long in the database and
+ * waiting for a connection. */
+function slowLog(): void {
+  const by = new Map<string, { n: number; ms: number; statements: number; db: number; wait: number }>();
+  const re = /ortus: slow: (\S+) (\S+) (\d+) ms: (\d+) statements, (\d+) ms in the database, (\d+) ms waiting/;
+  for (const line of ortus.log.join("").split("\n")) {
+    const m = re.exec(line);
+    if (!m) continue;
+    const route = `${m[1]} ${m[2]!.split("?")[0]!.replace(/\/[^/]*[0-9][^/]*/g, "/:id")}`;
+    const e = by.get(route) ?? { n: 0, ms: 0, statements: 0, db: 0, wait: 0 };
+    e.n += 1;
+    e.ms += Number(m[3]);
+    e.statements += Number(m[4]);
+    e.db += Number(m[5]);
+    e.wait += Number(m[6]);
+    by.set(route, e);
+  }
+  const rows = [...by].sort((a, b) => b[1].n - a[1].n).slice(0, 15);
+  for (const [route, e] of rows) {
+    console.log(`slow request: ${route}: ${e.n}, ${Math.round(e.ms / e.n)} ms, ${Math.round(e.statements / e.n)} statements, ${Math.round(e.db / e.n)} ms in the database, ${Math.round(e.wait / e.n)} ms waiting for a connection`);
   }
 }
 
@@ -435,7 +462,8 @@ function slowness(trace: Trace): { histogram: Record<string, number>; bySecond: 
 }
 
 async function main(): Promise<void> {
-  ortus = await startOrtus();
+  // The program logs requests slower than this, with their database time.
+  ortus = await startOrtus({ ORTUS_SLOW_MS: process.env.ORTUS_SLOW_MS ?? "300" });
   let failed = false;
   try {
     await setUp();
@@ -463,6 +491,8 @@ async function main(): Promise<void> {
       console.log(`step: ${at} at once: ${step.perSecond.toFixed(0)} a second, read p95 ${p95("read")} ms, write p95 ${p95("write")} ms, ${step.errors} errors, ${step.cpu} cores${within ? "" : " (over budget)"}`);
       console.log("  machine:", JSON.stringify(step.machine));
     }
+
+    slowLog();
 
     mkdirSync("test-results", { recursive: true });
     const report = { shape: ortus.shape, people: PEOPLE, seconds: SECONDS, history: HISTORY, pauseMs: PAUSE ?? 600, count, errors, perSecond: Math.round(day.perSecond * 10) / 10, cpu: day.cpu, rssMb: day.rss, rows, machine: day.machine, steps };
