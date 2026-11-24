@@ -18,7 +18,9 @@
 //
 // The report goes to stdout and to test-results/load.json (with the
 // server's memory and CPU), and as Markdown to test-results/load.md.
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { execFile } from "node:child_process";
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import pg from "pg";
 import { startOrtus, type Installation } from "../harness/ortus.ts";
 import { deliver } from "../harness/smtp.ts";
 
@@ -201,17 +203,21 @@ function choose(): Op {
 }
 
 type Timings = Map<string, number[]>;
+/** Every operation of a phase: [started ms since the phase began, name, ms taken]. */
+type Trace = [number, string, number][];
 type Failures = Map<string, string[]>;
 
-async function person(until: number, p: Person, timings: Timings, failures: Failures, pauses = true): Promise<void> {
+async function person(until: number, p: Person, timings: Timings, failures: Failures, pauses = true, trace?: Trace, origin = 0): Promise<void> {
   while (Date.now() < until) {
     const op = choose();
     const started = performance.now();
     try {
       await op.run(p);
+      const took = performance.now() - started;
       const list = timings.get(op.name) ?? [];
-      list.push(performance.now() - started);
+      list.push(took);
       timings.set(op.name, list);
+      trace?.push([Math.round(started - origin), op.name, Math.round(took)]);
     } catch (e) {
       const list = failures.get(op.name) ?? [];
       list.push(String(e));
@@ -236,6 +242,69 @@ function usage(): { rss: number; cpu: number } | undefined {
     return { rss: Math.round(rss), cpu: ticks / 100 };
   } catch {
     return undefined;
+  }
+}
+
+/** CPU seconds so far of the whole machine (busy) and of the processes
+ * that share it, by name: the program, the database, the object store,
+ * the load maker and Docker's port forwarders. */
+function machine(): { busy: number; by: Record<string, number> } {
+  const by: Record<string, number> = {};
+  let busy = 0;
+  try {
+    const cpu = readFileSync("/proc/stat", "utf8").split("\n")[0]!.trim().split(/\s+/).slice(1).map(Number);
+    // user nice system idle iowait irq softirq steal
+    busy = (cpu[0]! + cpu[1]! + cpu[2]! + cpu[5]! + cpu[6]! + cpu[7]!) / 100;
+    for (const pid of readdirSync("/proc")) {
+      if (!/^\d+$/.test(pid)) continue;
+      try {
+        const stat = readFileSync(`/proc/${pid}/stat`, "utf8");
+        const name = stat.slice(stat.indexOf("(") + 1, stat.lastIndexOf(")"));
+        const key = ["ortus", "postgres", "rustfs", "node", "docker-proxy"].find((k) => name.startsWith(k));
+        if (!key) continue;
+        const fields = stat.slice(stat.lastIndexOf(")") + 2).split(" ");
+        by[key] = (by[key] ?? 0) + (Number(fields[11]) + Number(fields[12])) / 100;
+      } catch {
+        // gone meanwhile
+      }
+    }
+  } catch {
+    // not Linux
+  }
+  return { busy, by };
+}
+
+function run(command: string, args: string[]): Promise<string> {
+  return new Promise((done) => execFile(command, args, (e, out) => done(e ? "" : out)));
+}
+
+/** TCP counters that show lost or refused connections. */
+async function tcp(): Promise<Record<string, number>> {
+  const out: Record<string, number> = {};
+  for (const line of (await run("nstat", ["-az"])).split("\n")) {
+    const [name, value] = line.trim().split(/\s+/);
+    if (name && ["TcpExtListenOverflows", "TcpExtListenDrops", "TcpRetransSegs", "TcpExtTCPTimeouts", "TcpAttemptFails", "TcpEstabResets"].includes(name)) out[name] = Number(value);
+  }
+  return out;
+}
+
+/** The database's committed transactions so far, and what its sessions wait on now. */
+async function database(): Promise<{ commits: number; waiting: Record<string, number> } | undefined> {
+  const url = process.env.ORTUS_TEST_POSTGRES;
+  if (!url || ortus.shape !== "cluster") return undefined;
+  const c = new pg.Client({ connectionString: url });
+  try {
+    await c.connect();
+    const commits = Number((await c.query("SELECT sum(xact_commit + xact_rollback) AS n FROM pg_stat_database")).rows[0]?.n ?? 0);
+    const waiting: Record<string, number> = {};
+    for (const r of (await c.query("SELECT state, wait_event_type, wait_event, count(*) AS n FROM pg_stat_activity WHERE backend_type = 'client backend' AND pid <> pg_backend_pid() GROUP BY 1, 2, 3")).rows) {
+      waiting[`${r.state ?? "-"}/${r.wait_event_type ?? "cpu"}/${r.wait_event ?? "-"}`] = Number(r.n);
+    }
+    return { commits, waiting };
+  } catch {
+    return undefined;
+  } finally {
+    await c.end().catch(() => {});
   }
 }
 
@@ -298,22 +367,71 @@ function rowsOf(timings: Timings, failures: Failures): Row[] {
 }
 
 /** One phase: who runs, how long, with or without pauses. */
-async function phase(who: Person[], seconds: number, pauses: boolean): Promise<{ rows: Row[]; count: number; errors: number; perSecond: number; cpu: number; rss: number; failures: Failures }> {
+interface Machine {
+  /** Cores busy on average, the whole machine and each process kind. */
+  cores: Record<string, number>;
+  /** Database transactions per operation. */
+  transactionsPerOp?: number;
+  /** Database sessions by what they were doing, summed over samples every 2 s. */
+  waiting?: Record<string, number>;
+  tcp: Record<string, number>;
+}
+
+async function phase(who: Person[], seconds: number, pauses: boolean): Promise<{ rows: Row[]; count: number; errors: number; perSecond: number; cpu: number; rss: number; failures: Failures; machine: Machine; trace: Trace }> {
   const timings: Timings = new Map();
   const failures: Failures = new Map();
+  const trace: Trace = [];
   const before = usage();
+  const machineBefore = machine();
+  const tcpBefore = await tcp();
+  const dbBefore = await database();
+  const waiting: Record<string, number> = {};
   let peak = before?.rss ?? 0;
-  const sampler = setInterval(() => (peak = Math.max(peak, usage()?.rss ?? 0)), 2000);
+  const sampler = setInterval(() => {
+    peak = Math.max(peak, usage()?.rss ?? 0);
+    void database().then((d) => {
+      for (const [k, n] of Object.entries(d?.waiting ?? {})) waiting[k] = (waiting[k] ?? 0) + n;
+    });
+  }, 2000);
+  const origin = performance.now();
   const until = Date.now() + seconds * 1000;
-  await Promise.all(who.map((p) => person(until, p, timings, failures, pauses)));
+  await Promise.all(who.map((p) => person(until, p, timings, failures, pauses, trace, origin)));
   clearInterval(sampler);
   const after = usage();
+  const machineAfter = machine();
+  const tcpAfter = await tcp();
+  const dbAfter = await database();
   const rows = rowsOf(timings, failures);
   const count = rows.reduce((n, r) => n + r.count, 0);
   const errors = rows.reduce((n, r) => n + r.errors, 0);
   // CPU as cores busy on average over the phase.
   const cpu = before && after ? (after.cpu - before.cpu) / seconds : 0;
-  return { rows, count, errors, perSecond: count / seconds, cpu: Math.round(cpu * 100) / 100, rss: peak, failures };
+  const round = (n: number) => Math.round(n * 100) / 100;
+  const cores: Record<string, number> = { machine: round((machineAfter.busy - machineBefore.busy) / seconds) };
+  for (const [k, v] of Object.entries(machineAfter.by)) cores[k] = round((v - (machineBefore.by[k] ?? 0)) / seconds);
+  const tcpDelta: Record<string, number> = {};
+  for (const [k, v] of Object.entries(tcpAfter)) tcpDelta[k] = v - (tcpBefore[k] ?? 0);
+  const m: Machine = { cores, tcp: tcpDelta };
+  if (dbBefore && dbAfter) {
+    m.transactionsPerOp = round((dbAfter.commits - dbBefore.commits) / Math.max(1, count));
+    m.waiting = waiting;
+  }
+  return { rows, count, errors, perSecond: count / seconds, cpu: round(cpu), rss: peak, failures, machine: m, trace };
+}
+
+/** How the slow operations of a phase are spread: per op over 150 ms, a
+ * histogram by 50 ms, and the seconds of the phase they started in. */
+function slowness(trace: Trace): { histogram: Record<string, number>; bySecond: Record<string, number> } {
+  const histogram: Record<string, number> = {};
+  const bySecond: Record<string, number> = {};
+  for (const [at, , took] of trace) {
+    if (took < 150) continue;
+    const bucket = `${Math.floor(took / 50) * 50}`;
+    histogram[bucket] = (histogram[bucket] ?? 0) + 1;
+    const second = `${Math.floor(at / 1000)}`;
+    bySecond[second] = (bySecond[second] ?? 0) + 1;
+  }
+  return { histogram, bySecond };
 }
 
 async function main(): Promise<void> {
@@ -325,6 +443,8 @@ async function main(): Promise<void> {
     const { rows, count, errors } = day;
     console.log(`${ortus.shape}: ${PEOPLE} people for ${SECONDS} s, ${count} operations (${day.perSecond.toFixed(1)} a second), ${errors} errors, ${day.cpu} cores busy, ${day.rss} MB at most`);
     console.table(rows);
+    console.log("machine:", JSON.stringify(day.machine));
+    console.log("slow:", JSON.stringify(slowness(day.trace)));
     const over = rows.filter((r) => r.count && r.p95 > r.budget);
     for (const r of over) console.error(`over budget: ${r.name} p95 ${r.p95} ms > ${r.budget} ms`);
     const rate = errors / Math.max(1, count + errors);
@@ -339,13 +459,15 @@ async function main(): Promise<void> {
       const step = await phase(people.slice(0, Math.min(at, people.length)), STEP_SECONDS, false);
       const p95 = (kind: Kind) => Math.max(0, ...step.rows.filter((r) => r.kind === kind && r.count).map((r) => r.p95));
       const within = p95("read") <= BUDGET.read && p95("write") <= BUDGET.write && step.errors / Math.max(1, step.count + step.errors) <= ERRORS;
-      steps.push({ atOnce: at, perSecond: Math.round(step.perSecond), readP95: p95("read"), writeP95: p95("write"), errors: step.errors, cpu: step.cpu, rss: step.rss, within });
+      steps.push({ atOnce: at, perSecond: Math.round(step.perSecond), readP95: p95("read"), writeP95: p95("write"), errors: step.errors, cpu: step.cpu, rss: step.rss, within, rows: step.rows, machine: step.machine });
       console.log(`step: ${at} at once: ${step.perSecond.toFixed(0)} a second, read p95 ${p95("read")} ms, write p95 ${p95("write")} ms, ${step.errors} errors, ${step.cpu} cores${within ? "" : " (over budget)"}`);
+      console.log("  machine:", JSON.stringify(step.machine));
     }
 
     mkdirSync("test-results", { recursive: true });
-    const report = { shape: ortus.shape, people: PEOPLE, seconds: SECONDS, history: HISTORY, pauseMs: PAUSE ?? 600, count, errors, perSecond: Math.round(day.perSecond * 10) / 10, cpu: day.cpu, rssMb: day.rss, rows, steps };
+    const report = { shape: ortus.shape, people: PEOPLE, seconds: SECONDS, history: HISTORY, pauseMs: PAUSE ?? 600, count, errors, perSecond: Math.round(day.perSecond * 10) / 10, cpu: day.cpu, rssMb: day.rss, rows, machine: day.machine, steps };
     writeFileSync("test-results/load.json", JSON.stringify(report, null, 2));
+    writeFileSync("test-results/load.trace.json", JSON.stringify(day.trace));
     writeFileSync("test-results/load.md", markdown(report));
   } catch (e) {
     console.error(e);
@@ -358,12 +480,13 @@ async function main(): Promise<void> {
   console.log("load within budget");
 }
 
-function markdown(r: { shape: string; people: number; seconds: number; history: number; pauseMs: number; count: number; errors: number; perSecond: number; cpu: number; rssMb: number; rows: Row[]; steps: { atOnce: number; perSecond: number; readP95: number; writeP95: number; errors: number; cpu: number; rss: number; within: boolean }[] }): string {
+function markdown(r: { shape: string; people: number; seconds: number; history: number; pauseMs: number; count: number; errors: number; perSecond: number; cpu: number; rssMb: number; rows: Row[]; machine?: Machine; steps: { atOnce: number; perSecond: number; readP95: number; writeP95: number; errors: number; cpu: number; rss: number; within: boolean }[] }): string {
   const lines = [
     `### ${r.shape}: ${r.people} people, ${r.seconds} s`,
     "",
     `${r.count} operations (${r.perSecond} a second), ${r.errors} errors; each person acts about every ${(r.pauseMs / 1000).toFixed(1)} s; ${r.history} messages each beforehand. The program used ${r.cpu} cores on average and ${r.rssMb} MB of memory at most.`,
     "",
+    ...(r.machine ? [`Cores busy on the runner: ${Object.entries(r.machine.cores).map(([k, v]) => `${k} ${v}`).join(", ")}${r.machine.transactionsPerOp === undefined ? "" : `; ${r.machine.transactionsPerOp} database transactions an operation`}.`, ""] : []),
     "| Operation | Kind | Count | Errors | p50 ms | p95 ms | p99 ms | Budget p95 |",
     "|---|---|---:|---:|---:|---:|---:|---:|",
     ...r.rows.map((x) => `| ${x.name} | ${x.kind} | ${x.count} | ${x.errors} | ${x.p50} | ${x.p95} | ${x.p99} | ${x.budget} |`),
