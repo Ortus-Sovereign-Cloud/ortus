@@ -1,0 +1,112 @@
+name: load
+
+# Ortus with many people at once (stories/load/load.ts): the release
+# program on PostgreSQL and S3, people signed in through invitations, with
+# a mailbox of history each, doing a working day's mix, then steps with
+# more and more at once and no pauses. The numbers go to the run's summary
+# and to the operator guide's sizing page. The load maker runs on the same
+# runner (4 cores) as the program, so the numbers are a floor.
+on:
+  workflow_dispatch:
+    inputs:
+      people:
+        description: People signed in
+        default: "1000"
+      seconds:
+        description: Seconds of the working day
+        default: "300"
+      history:
+        description: Messages each person already has
+        default: "20"
+      pause:
+        description: Mean pause between one person's actions (ms)
+        default: "6000"
+      steps:
+        description: People at once with no pauses, a step each
+        default: "25,50,100,200"
+      shape:
+        description: cluster (PostgreSQL and S3) or one-machine (SQLite and a directory)
+        default: cluster
+  schedule:
+    # Mondays: a week's changes measured.
+    - cron: "17 3 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: load
+  cancel-in-progress: false
+
+jobs:
+  load:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: ortus
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      rustfs:
+        image: rustfs/rustfs:1.0.6
+        env:
+          RUSTFS_ACCESS_KEY: ortusaccess
+          RUSTFS_SECRET_KEY: ortussecret
+        ports:
+          - 9000:9000
+    env:
+      ORTUS_TEST_POSTGRES: postgres://postgres:ortus@127.0.0.1:5432/postgres
+      ORTUS_TEST_S3_ENDPOINT: http://127.0.0.1:9000
+      ORTUS_TEST_S3_BUCKET: ortus-test
+      ORTUS_TEST_S3_ACCESS_KEY: ortusaccess
+      ORTUS_TEST_S3_SECRET_KEY: ortussecret
+      LOAD_PEOPLE: ${{ inputs.people || '1000' }}
+      LOAD_SECONDS: ${{ inputs.seconds || '300' }}
+      LOAD_HISTORY: ${{ inputs.history || '20' }}
+      LOAD_PAUSE_MS: ${{ inputs.pause || '6000' }}
+      LOAD_STEPS: ${{ inputs.steps || '25,50,100,200' }}
+      ORTUS_STORY_SHAPE: ${{ inputs.shape || 'cluster' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - name: The test bucket
+        env:
+          AWS_ACCESS_KEY_ID: ortusaccess
+          AWS_SECRET_ACCESS_KEY: ortussecret
+          AWS_DEFAULT_REGION: us-east-1
+        run: |
+          for attempt in $(seq 30); do
+            aws --endpoint-url "$ORTUS_TEST_S3_ENDPOINT" s3 mb "s3://$ORTUS_TEST_S3_BUCKET" && break
+            sleep 2
+          done
+      - name: The release program
+        run: ci/fetch.sh && cargo build --release
+      - name: Many people at once
+        run: |
+          ulimit -n 65536
+          cd stories && npm ci --silent && node load/load.ts
+      - name: The numbers
+        if: always()
+        run: |
+          {
+            echo "Program commit ${GITHUB_SHA::7}; $(nproc) cores, $(free -g | awk '/Mem:/ {print $2}') GB on the runner, the load maker on the same runner."
+            echo
+            cat stories/test-results/load.md 2>/dev/null || echo "No report: see the step's log."
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: load-${{ github.run_id }}
+          path: stories/test-results/load.*
+          retention-days: 90

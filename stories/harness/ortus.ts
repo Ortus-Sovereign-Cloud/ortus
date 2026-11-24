@@ -40,6 +40,8 @@ export interface Installation {
   setupToken: string;
   /** Lines the program has printed so far, for failure reports. */
   log: string[];
+  /** The program's process id (the load run samples its memory and CPU). */
+  pid?: number;
   stop(): Promise<void>;
 }
 
@@ -168,6 +170,7 @@ async function startOnce(env: Record<string, string>): Promise<Installation> {
     smtpPort,
     dns,
     log,
+    pid: child.pid,
     async stop() {
       if (child.exitCode === null) {
         const exited = new Promise((r) => child.once("exit", r));
