@@ -216,7 +216,11 @@ async function person(until: number, p: Person, timings: Timings, failures: Fail
     const op = choose();
     const started = performance.now();
     try {
-      await op.run(p);
+      // An operation that never finishes fails after a minute instead of
+      // holding up the whole run.
+      let timer: NodeJS.Timeout | undefined;
+      const late = new Promise<never>((_, reject) => (timer = setTimeout(() => reject(new Error(`${op.name}: no answer in 60 s`)), 60_000)));
+      await Promise.race([op.run(p), late]).finally(() => clearTimeout(timer));
       const took = performance.now() - started;
       const list = timings.get(op.name) ?? [];
       list.push(took);
