@@ -2,10 +2,10 @@
 # ci/fetch.sh checks each one out under .deps/ and builds its web client.
 # Change a pin only to a commit whose own CI is green.
 ortus-core = "57168209610bc570b78d560a7d426e9242c19933"
-ortus-mail = "29df11cd8d108bf592802f3810a88d0313630331"
+ortus-mail = "7504c34117eac126d30cedbaeee23aedf380b74c"
 ortus-calendar = "73779e9a8617c207a80ceab19dd7bf0be364ed05"
-ortus-drive = "ece2b18f7b4dad101d280a5729e5d3939f6db45f"
+ortus-drive = "db978b79d6991e708c6135cf31fdf35da68351c9"
 ortus-docs = "72aacf26d3c51fd1024cccf2897a3ba540738208"
-ortus-chat = "3f58a809db3cd431dd493d3786e7860647d220c8"
+ortus-chat = "ac6f8977fb01f6b31636535cffd7ede2d291fc14"
 ortus-calls = "84cb6c65691e0e214667c86caae36d3d78e6a501"
 ortus-tasks = "a0f06eedac2a73f6c0461bbd6b8318a04e7a0507"
