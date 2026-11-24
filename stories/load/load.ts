@@ -209,7 +209,8 @@ type Failures = Map<string, string[]>;
 
 async function person(until: number, p: Person, timings: Timings, failures: Failures, pauses = true, trace?: Trace, origin = 0): Promise<void> {
   // People start their day at different moments, not all in the same
-  // millisecond (that burst was a tenth of the run's slow operations).
+  // millisecond (that burst was a quarter of the slow operations of a
+  // 200-person run).
   if (pauses) await new Promise((r) => setTimeout(r, Math.random() * (PAUSE ?? 600)));
   while (Date.now() < until) {
     const op = choose();
