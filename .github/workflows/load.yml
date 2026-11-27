@@ -27,6 +27,12 @@ on:
       shape:
         description: cluster (PostgreSQL and S3) or one-machine (SQLite and a directory)
         default: cluster
+      trust:
+        description: End-to-end trust in the mix (1) or not (0)
+        default: "1"
+      connections:
+        description: The program's database connections
+        default: "16"
   schedule:
     # Mondays: a week's changes measured.
     - cron: "17 3 * * 1"
@@ -73,6 +79,8 @@ jobs:
       LOAD_PAUSE_MS: ${{ inputs.pause || '6000' }}
       LOAD_STEPS: ${{ inputs.steps || '25,50,100,200' }}
       ORTUS_STORY_SHAPE: ${{ inputs.shape || 'cluster' }}
+      LOAD_TRUST: ${{ inputs.trust || '1' }}
+      LOAD_CONNECTIONS: ${{ inputs.connections || '16' }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable

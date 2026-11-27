@@ -18,7 +18,9 @@
 //   LOAD_SEALED=50      people in each end-to-end room (teams): everyone
 //                       has a device with signed keys, cross-signing keys,
 //                       signatures on their device and on a few colleagues,
-//                       and a key backup (LOAD_BACKUP_KEYS room keys)
+//                       and a key backup (LOAD_BACKUP_KEYS room keys);
+//                       LOAD_TRUST=0 leaves end-to-end trust out
+//   LOAD_CONNECTIONS=16 the program's database connections
 //
 // The report goes to stdout and to test-results/load.json (with the
 // server's memory and CPU), and as Markdown to test-results/load.md.
@@ -36,6 +38,7 @@ const HISTORY = Number(process.env.LOAD_HISTORY ?? 0);
 const PAUSE = process.env.LOAD_PAUSE_MS ? Number(process.env.LOAD_PAUSE_MS) : undefined;
 const STEPS = (process.env.LOAD_STEPS ?? "").split(",").filter(Boolean).map(Number);
 const STEP_SECONDS = Number(process.env.LOAD_STEP_SECONDS ?? 30);
+const TRUST = process.env.LOAD_TRUST !== "0";
 const SEALED = Number(process.env.LOAD_SEALED ?? 50);
 const BACKUP_KEYS = Number(process.env.LOAD_BACKUP_KEYS ?? 200);
 /** Requests in flight at once while setting up. */
@@ -208,6 +211,7 @@ const OPS: Op[] = [
   { name: "trust.backup.upload", kind: "write", weight: 2, run: async (p) => void (await api(p, "PUT", `/chat/backup/keys?version=${p.backup}`, backupKeys(p.sealed!, 3)).then((r) => r.json())) },
   { name: "trust.backup.restore", kind: "read", weight: 1, run: async (p) => void (await api(p, "GET", `/chat/backup/keys?version=${p.backup}`).then((r) => r.json())) },
 ];
+if (!TRUST) OPS.splice(0, OPS.length, ...OPS.filter((o) => !o.name.startsWith("trust.")));
 const total = OPS.reduce((n, o) => n + o.weight, 0);
 
 function choose(): Op {
@@ -476,7 +480,7 @@ async function setUp(): Promise<void> {
   const made = (await api(olena, "POST", "/chat/rooms", { kind: "channel", name: "flood-response", members: people.slice(1).map((p) => p.email) }).then((r) => r.json())) as { id: string };
   room = made.id;
   await inBatches(people.slice(1), SETUP_AT_ONCE, async (p) => void (await api(p, "POST", `/chat/rooms/${room}/join`)));
-  await setUpTrust(olena);
+  if (TRUST) await setUpTrust(olena);
   // History: the mail each person already has, and the room's past.
   if (HISTORY > 0) {
     const started = Date.now();
@@ -581,7 +585,7 @@ function slowness(trace: Trace): { histogram: Record<string, number>; bySecond: 
 
 async function main(): Promise<void> {
   // The program logs requests slower than this, with their database time.
-  ortus = await startOrtus({ ORTUS_SLOW_MS: process.env.ORTUS_SLOW_MS ?? "300" });
+  ortus = await startOrtus({ ORTUS_SLOW_MS: process.env.ORTUS_SLOW_MS ?? "300", ...(process.env.LOAD_CONNECTIONS ? { ORTUS_DATABASE_MAX_CONNECTIONS: process.env.LOAD_CONNECTIONS } : {}) });
   let failed = false;
   try {
     await setUp();
