@@ -15,10 +15,15 @@
 //   LOAD_STEPS=25,50,100,200  then that many people at once with no pauses,
 //                       a step each: the busiest the installation stays
 //                       within budget
+//   LOAD_SEALED=50      people in each end-to-end room (teams): everyone
+//                       has a device with signed keys, cross-signing keys,
+//                       signatures on their device and on a few colleagues,
+//                       and a key backup (LOAD_BACKUP_KEYS room keys)
 //
 // The report goes to stdout and to test-results/load.json (with the
 // server's memory and CPU), and as Markdown to test-results/load.md.
 import { execFile } from "node:child_process";
+import { generateKeyPairSync, randomBytes, sign, type KeyObject } from "node:crypto";
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import pg from "pg";
 import { startOrtus, type Installation } from "../harness/ortus.ts";
@@ -31,6 +36,8 @@ const HISTORY = Number(process.env.LOAD_HISTORY ?? 0);
 const PAUSE = process.env.LOAD_PAUSE_MS ? Number(process.env.LOAD_PAUSE_MS) : undefined;
 const STEPS = (process.env.LOAD_STEPS ?? "").split(",").filter(Boolean).map(Number);
 const STEP_SECONDS = Number(process.env.LOAD_STEP_SECONDS ?? 30);
+const SEALED = Number(process.env.LOAD_SEALED ?? 50);
+const BACKUP_KEYS = Number(process.env.LOAD_BACKUP_KEYS ?? 200);
 /** Requests in flight at once while setting up. */
 const SETUP_AT_ONCE = 16;
 
@@ -51,6 +58,9 @@ interface Op {
 interface Person {
   email: string;
   cookie: string;
+  /** Their end-to-end room (a team's), and their key backup's version. */
+  sealed?: string;
+  backup?: string;
 }
 
 let ortus: Installation;
@@ -190,6 +200,13 @@ const OPS: Op[] = [
   },
   { name: "docs.create", kind: "write", weight: 1, run: async (p) => void (await api(p, "POST", "/docs/documents", { parent: "", name: `Minutes ${Date.now()}-${Math.random().toString(36).slice(2, 6)}` }).then((r) => r.json())) },
   { name: "search", kind: "read", weight: 3, run: async (p) => void (await api(p, "GET", `/search?q=${pick(words)}`).then((r) => r.json())) },
+  // End-to-end trust: a sender asks for the room's devices with who vouches
+  // for whom before sharing a room key; new room keys go to the backup; a
+  // device checks the backup on start and, rarely, restores all of it.
+  { name: "trust.devices", kind: "read", weight: 2, run: async (p) => void (await api(p, "GET", `/chat/rooms/${p.sealed}/devices`).then((r) => r.json())) },
+  { name: "trust.backup.version", kind: "read", weight: 1, run: async (p) => void (await api(p, "GET", "/chat/backup/version").then((r) => r.json())) },
+  { name: "trust.backup.upload", kind: "write", weight: 2, run: async (p) => void (await api(p, "PUT", `/chat/backup/keys?version=${p.backup}`, backupKeys(p.sealed!, 3)).then((r) => r.json())) },
+  { name: "trust.backup.restore", kind: "read", weight: 1, run: async (p) => void (await api(p, "GET", `/chat/backup/keys?version=${p.backup}`).then((r) => r.json())) },
 ];
 const total = OPS.reduce((n, o) => n + o.weight, 0);
 
@@ -346,6 +363,101 @@ function percentile(values: number[], p: number): number {
   return sorted[Math.min(sorted.length - 1, Math.ceil((p / 100) * sorted.length) - 1)]!;
 }
 
+// ---- end-to-end trust, as clients make it ---------------------------------
+
+const b64 = (b: Uint8Array): string => Buffer.from(b).toString("base64").replace(/=+$/, "");
+
+/** Matrix canonical JSON: sorted keys, no spaces. */
+function canonical(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(canonical).join(",")}]`;
+  if (v && typeof v === "object") {
+    const o = v as Record<string, unknown>;
+    return `{${Object.keys(o).sort().map((k) => `${JSON.stringify(k)}:${canonical(o[k])}`).join(",")}}`;
+  }
+  return JSON.stringify(v);
+}
+
+interface Signer {
+  id: string;
+  public: string;
+  key: KeyObject;
+}
+
+function signer(name?: string): Signer {
+  const { publicKey, privateKey } = generateKeyPairSync("ed25519");
+  const pub = b64(Buffer.from(publicKey.export({ format: "jwk" }).x!, "base64url"));
+  return { id: `ed25519:${name ?? pub}`, public: pub, key: privateKey };
+}
+
+/** `object` with `by`'s signature as `mx`, beside those it has. */
+function signed<T extends Record<string, unknown>>(object: T, mx: string, by: Signer): T {
+  const { signatures, unsigned: _, ...rest } = object as T & { signatures?: Record<string, Record<string, string>>; unsigned?: unknown };
+  const sig = b64(sign(null, Buffer.from(canonical(rest)), by.key));
+  return { ...object, signatures: { ...signatures, [mx]: { ...signatures?.[mx], [by.id]: sig } } };
+}
+
+/** Room keys for a backup as clients upload them (the server keeps them opaque). */
+function backupKeys(room: string, n: number): unknown {
+  const sessions: Record<string, unknown> = {};
+  for (let i = 0; i < n; i++) {
+    sessions[b64(randomBytes(32))] = {
+      first_message_index: 0,
+      forwarded_count: 0,
+      is_verified: true,
+      session_data: { ephemeral: b64(randomBytes(32)), ciphertext: b64(randomBytes(240)), mac: b64(randomBytes(8)) },
+    };
+  }
+  return { rooms: { [room]: { sessions } } };
+}
+
+/** Each person: a device with signed keys, cross-signing keys, their
+ * self-signing key's signature on the device, their user-signing key's
+ * on three colleagues' master keys (verified), a key backup; teams of
+ * SEALED in an end-to-end room each. */
+async function setUpTrust(olena: Person): Promise<void> {
+  const started = Date.now();
+  await api(olena, "PATCH", "/chat/policy", { encryptedRooms: true });
+  const ids = new Map<Person, { mx: string; master: Signer; usk: Signer }>();
+  await inBatches(people, SETUP_AT_ONCE, async (p) => {
+    const mx = ((await api(p, "GET", "/chat/rooms").then((r) => r.json())) as { me: string }).me;
+    const device = "LOAD" + randomBytes(4).toString("hex").toUpperCase();
+    const ed = signer(device);
+    const deviceKeys = signed({ user_id: mx, device_id: device, algorithms: ["m.olm.v1.curve25519-aes-sha2", "m.megolm.v1.aes-sha2"], keys: { [`curve25519:${device}`]: b64(randomBytes(32)), [ed.id]: ed.public } }, mx, ed);
+    await api(p, "PUT", `/chat/devices/${device}`, { deviceKeys, oneTimeKeys: {}, fallbackKeys: {} });
+    const master = signer();
+    const ssk = signer();
+    const usk = signer();
+    const key = (s: Signer, usage: string) => ({ user_id: mx, usage: [usage], keys: { [s.id]: s.public } });
+    await api(p, "PUT", "/chat/cross-signing", { master: key(master, "master"), selfSigning: signed(key(ssk, "self_signing"), mx, master), userSigning: signed(key(usk, "user_signing"), mx, master) });
+    const done = (await api(p, "POST", "/chat/signatures", { [mx]: { [device]: signed(deviceKeys, mx, ssk) } }).then((r) => r.json())) as { kept: number };
+    if (done.kept !== 1) throw new Error(`device signature not kept: ${JSON.stringify(done)}`);
+    p.backup = ((await api(p, "POST", "/chat/backup/version", { algorithm: "m.megolm_backup.v1.curve25519-aes-sha2", authData: { public_key: b64(randomBytes(32)) } }).then((r) => r.json())) as { version: string }).version;
+    ids.set(p, { mx, master, usk });
+  });
+  // Colleagues vouch for each other: three each, by the user-signing key.
+  await inBatches(people, SETUP_AT_ONCE, async (p) => {
+    const me = ids.get(p)!;
+    const body: Record<string, unknown> = {};
+    for (let n = 0; n < 3 && people.length > 1; n++) {
+      const other = ids.get(pick(people.filter((x) => x !== p)))!;
+      body[other.mx] = { [other.master.public]: signed({ user_id: other.mx, usage: ["master"], keys: { [other.master.id]: other.master.public } }, me.mx, me.usk) };
+    }
+    await api(p, "POST", "/chat/signatures", body);
+  });
+  // Teams in end-to-end rooms, and each person's backup of that room's keys.
+  const teams = Array.from({ length: Math.ceil(people.length / SEALED) }, (_, t) => people.slice(t * SEALED, (t + 1) * SEALED));
+  await inBatches(teams, SETUP_AT_ONCE, async (team) => {
+    const [lead, ...rest] = team;
+    const made = (await api(lead!, "POST", "/chat/rooms", { kind: "private", name: `team-${lead!.email.split("@")[0]}`, members: rest.map((p) => p.email), encrypted: true }).then((r) => r.json())) as { id: string };
+    for (const p of team) p.sealed = made.id;
+    await inBatches(rest, 4, async (p) => void (await api(p, "POST", `/chat/rooms/${made.id}/join`)));
+  });
+  await inBatches(people, SETUP_AT_ONCE, async (p) => {
+    for (let left = BACKUP_KEYS; left > 0; left -= 500) await api(p, "PUT", `/chat/backup/keys?version=${p.backup}`, backupKeys(p.sealed!, Math.min(500, left)));
+  });
+  console.log(`trust: ${people.length} devices, cross-signing, ${teams.length} end-to-end rooms of ${SEALED}, ${BACKUP_KEYS} backed-up room keys each in ${Math.round((Date.now() - started) / 1000)} s`);
+}
+
 async function setUp(): Promise<void> {
   const owner = await api(null, "POST", "/setup", { token: ortus.setupToken, name: "Olena Hrytsenko", email: "olena@ministry.example" });
   const olena: Person = { email: "olena@ministry.example", cookie: cookieOf(owner) };
@@ -364,6 +476,7 @@ async function setUp(): Promise<void> {
   const made = (await api(olena, "POST", "/chat/rooms", { kind: "channel", name: "flood-response", members: people.slice(1).map((p) => p.email) }).then((r) => r.json())) as { id: string };
   room = made.id;
   await inBatches(people.slice(1), SETUP_AT_ONCE, async (p) => void (await api(p, "POST", `/chat/rooms/${room}/join`)));
+  await setUpTrust(olena);
   // History: the mail each person already has, and the room's past.
   if (HISTORY > 0) {
     const started = Date.now();
