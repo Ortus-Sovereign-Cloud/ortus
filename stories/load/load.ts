@@ -24,6 +24,7 @@
 //
 // The report goes to stdout and to test-results/load.json (with the
 // server's memory and CPU), and as Markdown to test-results/load.md.
+import { AsyncLocalStorage } from "node:async_hooks";
 import { execFile } from "node:child_process";
 import { generateKeyPairSync, randomBytes, sign, type KeyObject } from "node:crypto";
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -67,6 +68,8 @@ interface Person {
 }
 
 let ortus: Installation;
+/** The database statements the current operation cost (Server-Timing). */
+const statements = new AsyncLocalStorage<{ n: number }>();
 let room = "";
 
 async function api(p: Person | null, method: string, path: string, body?: unknown, raw?: Uint8Array<ArrayBuffer>): Promise<Response> {
@@ -77,6 +80,9 @@ async function api(p: Person | null, method: string, path: string, body?: unknow
   if (raw) headers["Content-Type"] = "application/octet-stream";
   const r = await fetch(`${ortus.url}/api/v1${path}`, { method, headers, body: raw ?? (body === undefined ? undefined : JSON.stringify(body)) });
   if (!r.ok) throw new Error(`${method} ${path}: ${r.status} ${(await r.text()).slice(0, 200)}`);
+  const said = r.headers.get("server-timing")?.match(/desc="(\d+) statements"/);
+  const spent = statements.getStore();
+  if (said && spent) spent.n += Number(said[1]);
   return r;
 }
 
@@ -224,6 +230,8 @@ function choose(): Op {
 }
 
 type Timings = Map<string, number[]>;
+/** Database statements of each operation, by name. */
+const spentBy = new Map<string, number[]>();
 /** Every operation of a phase: [started ms since the phase began, name, ms taken]. */
 type Trace = [number, string, number][];
 type Failures = Map<string, string[]>;
@@ -241,8 +249,12 @@ async function person(until: number, p: Person, timings: Timings, failures: Fail
       // holding up the whole run.
       let timer: NodeJS.Timeout | undefined;
       const late = new Promise<never>((_, reject) => (timer = setTimeout(() => reject(new Error(`${op.name}: no answer in 60 s`)), 60_000)));
-      await Promise.race([op.run(p), late]).finally(() => clearTimeout(timer));
+      const spent = { n: 0 };
+      await Promise.race([statements.run(spent, () => op.run(p)), late]).finally(() => clearTimeout(timer));
       const took = performance.now() - started;
+      const counted = spentBy.get(op.name) ?? [];
+      if (counted.length < 1000) counted.push(spent.n);
+      spentBy.set(op.name, counted);
       const list = timings.get(op.name) ?? [];
       list.push(took);
       timings.set(op.name, list);
@@ -505,13 +517,15 @@ interface Row {
   p95: number;
   p99: number;
   budget: number;
+  /** Database statements, the median of the operation's. */
+  statements: number;
 }
 
 function rowsOf(timings: Timings, failures: Failures): Row[] {
   return OPS.map((op) => {
     const t = timings.get(op.name) ?? [];
     const errors = failures.get(op.name)?.length ?? 0;
-    return { name: op.name, kind: op.kind, count: t.length, errors, p50: Math.round(percentile(t, 50)), p95: Math.round(percentile(t, 95)), p99: Math.round(percentile(t, 99)), budget: BUDGET[op.kind] };
+    return { name: op.name, kind: op.kind, count: t.length, errors, p50: Math.round(percentile(t, 50)), p95: Math.round(percentile(t, 95)), p99: Math.round(percentile(t, 99)), budget: BUDGET[op.kind], statements: Math.round(percentile(spentBy.get(op.name) ?? [], 50)) };
   });
 }
 
@@ -585,7 +599,7 @@ function slowness(trace: Trace): { histogram: Record<string, number>; bySecond: 
 
 async function main(): Promise<void> {
   // The program logs requests slower than this, with their database time.
-  ortus = await startOrtus({ ORTUS_SLOW_MS: process.env.ORTUS_SLOW_MS ?? "300", ...(process.env.LOAD_CONNECTIONS ? { ORTUS_DATABASE_MAX_CONNECTIONS: process.env.LOAD_CONNECTIONS } : {}) });
+  ortus = await startOrtus({ ORTUS_SERVER_TIMING: "1", ORTUS_SLOW_MS: process.env.ORTUS_SLOW_MS ?? "300", ...(process.env.LOAD_CONNECTIONS ? { ORTUS_DATABASE_MAX_CONNECTIONS: process.env.LOAD_CONNECTIONS } : {}) });
   let failed = false;
   try {
     await setUp();
@@ -639,9 +653,9 @@ function markdown(r: { shape: string; people: number; seconds: number; history: 
     `${r.count} operations (${r.perSecond} a second), ${r.errors} errors; each person acts about every ${(r.pauseMs / 1000).toFixed(1)} s; ${r.history} messages each beforehand. The program used ${r.cpu} cores on average and ${r.rssMb} MB of memory at most.`,
     "",
     ...(r.machine ? [`Cores busy on the runner: ${Object.entries(r.machine.cores).map(([k, v]) => `${k} ${v}`).join(", ")}${r.machine.transactionsPerOp === undefined ? "" : `; ${r.machine.transactionsPerOp} database transactions an operation`}.`, ""] : []),
-    "| Operation | Kind | Count | Errors | p50 ms | p95 ms | p99 ms | Budget p95 |",
-    "|---|---|---:|---:|---:|---:|---:|---:|",
-    ...r.rows.map((x) => `| ${x.name} | ${x.kind} | ${x.count} | ${x.errors} | ${x.p50} | ${x.p95} | ${x.p99} | ${x.budget} |`),
+    "| Operation | Kind | Count | Errors | p50 ms | p95 ms | p99 ms | Budget p95 | Statements |",
+    "|---|---|---:|---:|---:|---:|---:|---:|---:|",
+    ...r.rows.map((x) => `| ${x.name} | ${x.kind} | ${x.count} | ${x.errors} | ${x.p50} | ${x.p95} | ${x.p99} | ${x.budget} | ${x.statements} |`),
   ];
   if (r.steps.length) {
     lines.push("", "| At once, no pauses | Operations a second | Read p95 ms | Write p95 ms | Errors | Cores | MB | Within budget |", "|---:|---:|---:|---:|---:|---:|---:|---|");
